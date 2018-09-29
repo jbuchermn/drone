@@ -11,20 +11,18 @@ def duration_to_dc(duration_ms):
 
 
 class ESC:
-    def __init__(self, pin, start_val=0.):
+    def __init__(self, pin):
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(pin, GPIO.OUT)
         self.pwm = GPIO.PWM(pin, PWM_FREQ)
-        self.pwm.start(duration_to_dc(1. + start_val))
+        self.pwm.start(duration_to_dc(2.01))
+        time.sleep(1)
+        self.pwm.ChangeDutyCycle(duration_to_dc(0.99))
+        time.sleep(1)
+        self.set_val(0.)
 
     def finish(self):
         self.pwm.stop()
-
-    def try_calibrate(self):
-        self.set_val(1.)
-        time.sleep(1)
-        self.set_val(0.)
-        time.sleep(1)
 
     def set_val(self, val):
         self.pwm.ChangeDutyCycle(duration_to_dc(1. + val))
@@ -32,10 +30,8 @@ class ESC:
 
 if __name__ == '__main__':
     pin = int(input("PIN? "))
-    print("Initializing ESC on PIN %d" % pin)
+    print("Initializing ESC on PIN %d..." % pin)
     esc = ESC(pin)
-    print("Trying to calibrate...")
-    esc.try_calibrate()
     print("...done")
 
     try:
