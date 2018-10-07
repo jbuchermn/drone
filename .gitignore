@@ -1,1 +1,4 @@
+ssl
 *.pyc
+**/node_modules/**/*
+**/*.log
