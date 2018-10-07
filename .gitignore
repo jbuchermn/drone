@@ -2,3 +2,4 @@ ssl
 *.pyc
 **/node_modules/**/*
 **/*.log
+*.out
