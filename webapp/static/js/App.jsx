@@ -1,5 +1,5 @@
 import React from "react"
-import UV4LVideo from './UV4LVideo'
+import Videostream from './Videostream'
 
 export default class App extends React.Component {
     constructor(props){
@@ -13,7 +13,7 @@ export default class App extends React.Component {
                     type="checkbox" 
                     onChange={()=>this.setState({ alive: !this.state.alive })} 
                     defaultChecked={this.state.alive}/> Alive
-                <UV4LVideo url={'ws://172.16.0.110:8081/webrtc'} alive={this.state.alive} />
+                <Videostream addr={'172.16.0.110'} useSSL={false} alive={this.state.alive} />
             </div>
         );
 	}

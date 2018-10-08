@@ -1,8 +1,10 @@
-
 import React from "react"
 import UV4LSignaling from './UV4LSignaling'
+import JanusSignaling from './JanusSignaling'
 
-export default class UV4LVideo extends React.Component {
+const Signaling = JanusSignaling;
+
+export default class Videostream extends React.Component {
     constructor(props){
         super(props);
         this.state = { stream: null, signaling: null };
@@ -49,7 +51,7 @@ export default class UV4LVideo extends React.Component {
      */
     static getDerivedStateFromProps(nextProps, prevState){
         let setupSignaling = () => {
-            let signaling = new UV4LSignaling(nextProps.url);
+            let signaling = new Signaling(nextProps.addr, nextProps.useSSL);
             signaling.open();
             return signaling;
         }
@@ -62,7 +64,7 @@ export default class UV4LVideo extends React.Component {
             return { signaling: setupSignaling() };
 
         }else if(nextProps.alive && prevState.signaling){
-            if(prevState.signaling.url != nextProps.url){
+            if(prevState.signaling.addr != nextProps.addr || prevState.signaling.useSSL != nextProps.useSSL){
                 prevState.signaling.close();
                 return { stream: null, signaling: setupSignaling() };
             }

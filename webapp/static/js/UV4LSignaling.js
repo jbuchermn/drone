@@ -8,62 +8,65 @@ RTCIceCandidate = /*window.mozRTCIceCandidate ||*/ window.RTCIceCandidate;
 
 
 export default class UV4LSignaling{
-    constructor(url){
-        this.url = url;
-        this.ws = null
-        this.pc = null;
-        this.icCandidates = [];
-        this.hasRemoteDesc = false;
-
+    constructor(addr, useSSL){
+        this.addr = addr;
+        this.useSSL = useSSL;
         this.stream = null;
-        this.waitingForRetry = false;
+
+        this._url = (this.useSSL ? "wss" : "ws") + "://" + this.addr + ":8081/webrtc";
+        this._ws = null
+        this._pc = null;
+        this._iceCandidates = [];
+        this._hasRemoteDesc = false;
+
+        this._waitingForRetry = false;
     }
 
-    retry(){
+    _retry(){
         // Don't start a million timers
-        if(this.waitingForRetry) return;
+        if(this._waitingForRetry) return;
 
         setTimeout(() => { 
             console.log("Retrying open()");
-            this.waitingForRetry = false;
+            this._waitingForRetry = false;
             this.open();
         }, 1000);
-        this.waitingForRetry = true;
+        this._waitingForRetry = true;
     }
 
 
     open(){
-        console.log("Opening web socket", this.url);
+        console.log("Opening web socket", this._url);
         if (!("WebSocket" in window)) {
             alert("WebSocket not supported...");
         }
 
         let addIceCandidates = () => {
-            if (this.hasRemoteDesc) {
-                this.iceCandidates.forEach((candidate) => {
-                    this.pc.addIceCandidate(candidate,
+            if (this._hasRemoteDesc) {
+                this._iceCandidates.forEach((candidate) => {
+                    this._pc.addIceCandidate(candidate,
                         () => {},
                         (error) => { console.error("addIceCandidate error: " + error); }
                     );
                 });
-                this.iceCandidates = [];
+                this._iceCandidates = [];
             }
         }
 
-        this.ws = new WebSocket(this.url);
+        this._ws = new WebSocket(this._url);
 
         //
         // onopen
         //
-        this.ws.onopen = () => {
+        this._ws.onopen = () => {
             /* var config = {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}; */
             let config = {"iceServers": []};
             let options = {optional: []};
-            this.pc = new RTCPeerConnection(config, options);
-            this.iceCandidates = [];
-            this.hasRemoteDesc = false;
+            this._pc = new RTCPeerConnection(config, options);
+            this._iceCandidates = [];
+            this._hasRemoteDesc = false;
 
-            this.pc.onicecandidate = (event) => {
+            this._pc.onicecandidate = (event) => {
                 if (event.candidate) {
                     let candidate = {
                         sdpMLineIndex: event.candidate.sdpMLineIndex,
@@ -74,16 +77,16 @@ export default class UV4LSignaling{
                         what: "addIceCandidate",
                         data: JSON.stringify(candidate)
                     };
-                    this.ws.send(JSON.stringify(request));
+                    this._ws.send(JSON.stringify(request));
                 } 
             };
 
-            if ('ontrack' in this.pc) {
-                this.pc.ontrack = (event) => {
+            if ('ontrack' in this._pc) {
+                this._pc.ontrack = (event) => {
                     this.stream = event.streams[0];
                 };
             } else {  // onaddstream() deprecated
-                this.pc.onaddstream = (event) => {
+                this._pc.onaddstream = (event) => {
                     this.stream = event.stream;
                 };
             }
@@ -100,13 +103,13 @@ export default class UV4LSignaling{
                 }
             };
             console.log("Sending message", request);
-            this.ws.send(JSON.stringify(request));
+            this._ws.send(JSON.stringify(request));
         };
 
         //
         // onmessage
         //
-        this.ws.onmessage = (evt) => {
+        this._ws.onmessage = (evt) => {
             let msg = JSON.parse(evt.data);
             let what = msg.what;
             let data = msg.data;
@@ -122,26 +125,26 @@ export default class UV4LSignaling{
                             OfferToReceiveVideo: true
                         }
                     };
-                    this.pc.setRemoteDescription(
+                    this._pc.setRemoteDescription(
                         new RTCSessionDescription(JSON.parse(data)),
                         () => {
-                            this.hasRemoteDesc = true;
+                            this._hasRemoteDesc = true;
                             addIceCandidates();
-                            this.pc.createAnswer(
+                            this._pc.createAnswer(
                                 (sessionDescription) => {
-                                    this.pc.setLocalDescription(sessionDescription);
+                                    this._pc.setLocalDescription(sessionDescription);
                                     let request = {
                                         what: "answer",
                                         data: JSON.stringify(sessionDescription)
                                     };
-                                    this.ws.send(JSON.stringify(request));
+                                    this._ws.send(JSON.stringify(request));
                                 },
                                 (error) => { onError("failed to create answer: " + error); },
                                 mediaConstraints);
                         },
                         (error) => {
                             onError('failed to set the remote description: ' + event);
-                            this.ws.close();
+                            this._ws.close();
                         }
                     );
                     break;
@@ -153,7 +156,7 @@ export default class UV4LSignaling{
                     // Assume message is "Sorry, the device is either busy streaming to another peer or 
                     // previous shutdown has not been completed yet"
                     console.log("Issuing retry due to message");
-                    this.retry();
+                    this._retry();
                     break;
 
                 case "iceCandidate": // received when trickle ice is used (see the "call" request)
@@ -164,7 +167,7 @@ export default class UV4LSignaling{
                         candidate: elt.candidate
                     });
 
-                    this.iceCandidates.push(candidate);
+                    this._iceCandidates.push(candidate);
                     addIceCandidates();
 
                     break;
@@ -177,7 +180,7 @@ export default class UV4LSignaling{
                             sdpMLineIndex: elt.sdpMLineIndex, 
                             candidate: elt.candidate
                         });
-                        this.iceCandidates.push(candidate);
+                        this._iceCandidates.push(candidate);
                     }
                     addIceCandidates();
                     break;
@@ -187,12 +190,12 @@ export default class UV4LSignaling{
         //
         // onclose
         //
-        this.ws.onclose = function (event) {
+        this._ws.onclose = function (event) {
             console.log('Socket closed with code: ' + event.code);
-            if (this.pc) {
-                this.pc.close();
-                this.pc = null;
-                this.ws = null;
+            if (this._pc) {
+                this._pc.close();
+                this._pc = null;
+                this._ws = null;
             }
             this.stream = null;
         };
@@ -200,17 +203,17 @@ export default class UV4LSignaling{
         //
         // onerror
         //
-        this.ws.onerror = (error) => {
-            this.retry();
+        this._ws.onerror = (error) => {
+            this._retry();
         };
 
     }
 
     close(){
-        if (this.ws) {
+        if (this._ws) {
             let request = { what: "hangup" };
             console.log("Sending message", request);
-            this.ws.send(JSON.stringify(request));
+            this._ws.send(JSON.stringify(request));
         }
     };
 }
