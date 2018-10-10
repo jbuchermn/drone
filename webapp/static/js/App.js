@@ -1,5 +1,5 @@
 import React from "react"
-import Videostream from './Videostream'
+import Signaling from './Signaling'
 
 export default class App extends React.Component {
     constructor(props){
@@ -13,7 +13,7 @@ export default class App extends React.Component {
                     type="checkbox" 
                     onChange={()=>this.setState({ alive: !this.state.alive })} 
                     defaultChecked={this.state.alive}/> Alive
-                <Videostream addr={'172.16.0.110'} useSSL={false} alive={this.state.alive} />
+                <Signaling alive={this.state.alive} janusEndpoint={'https://janus.conf.meetecho.com/janus'} />
             </div>
         );
 	}
