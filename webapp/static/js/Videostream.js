@@ -12,7 +12,6 @@ export default class Videostream extends React.Component {
         if(!this.props.stream) return;
 
         if(this.videoRef.current.srcObject !== this.props.stream){
-            console.log("SRC", this.props.stream);
             this.videoRef.current.srcObject = this.props.stream;
             this.videoRef.current.play();
         }

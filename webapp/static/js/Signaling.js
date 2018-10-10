@@ -4,46 +4,27 @@ import VideoStream from './Videostream';
 
 // Requires RTCPeerConnection, RTCSessionDescription
 
-export default class Signaling extends React.Component{
-    constructor(props){
-        super(props);
-        this.state = {
-            pc: null,  // RTCPeerConnection
-            session: null,  // Janus session
-            handle: null,  // Janus plugin handle
-            stream: null  // Stream object, to be used as video.srcObject
-        }
+class JanusWrapper{
+    constructor(janusEndpoint, pcConfig){
+        this.janusEndpoint = janusEndpoint;
+        this.pcConfig = pcConfig;
+        this.onopen = (stream) => {};  // May be called multiple times!
+        this.onclose = () => {};
+
+        this._session = null;
+        this._handle = null;
+        this._pc = null;
     }
 
-    _processAnswer(data){
-        if(!data){
-            console.log("Empty answer");
-            return null;
-        }
-
-        if(data.janus != "success"){
-            console.log("Janus error");
-            return null;
-        }
-
-        data = data.plugindata;
-        if(!data || !data.data){
-            console.log("Empty answer");
-            return null;
-        }
-
-        return data.data;
-    }
-
-    _initialize(handle){
-        handle.message({ request: "list" })
-            .then((data) => this._processAnswer(data))
+    _watchStream(){
+        this._handle.message({ request: "list" })
+            .then((data) => data.plugindata.data)
             .then(({ list }) => {
-                if(list.length == 0){
+                if(!list || list.length == 0){
                     console.log("No streams available");
-                    this.setState({ stream: null });
+                    this.close();
                 }else{
-                    handle.message({
+                    this._handle.message({
                         request: "watch",
                         id: list[0].id
                     });
@@ -51,83 +32,114 @@ export default class Signaling extends React.Component{
             });
     }
 
-    _createPC(jsep){
-        console.log("Got JSEP")
-        let pc = new RTCPeerConnection(this.props.pcConfig || {
+    _openPC(jsep){
+        this._pc = new RTCPeerConnection(this.pcConfig || {
             iceServers: [{urls: "stun:stun.l.google.com:19302"}],
         });
 
-        pc.oniceconnectionstatechange = (event) => {
-            console.log("onicestatechange", event);
-        };
+        this._pc.oniceconnectionstatechange = (event) => {};
 
-        pc.onicecandidate = (event) => {
+        this._pc.onicecandidate = (event) => {
             let candidate = event.candidate || { completed: true };
-            console.log("onicecandidate", candidate);
-            this.state.handle.trickle(candidate);
+            this._handle.trickle(candidate);
         };
 
-        pc.ontrack = (event) => {
+        this._pc.ontrack = (event) => {
             if(!event.streams) return;
-            console.log("Got a stream");
+            console.log("Janus: Got a stream");
             let stream = event.streams[0];
-
-            this.setState({ stream });
+            this.onopen(stream);
         };
 
-        pc.setRemoteDescription(new RTCSessionDescription(jsep)).then(() => {
-            console.log("Sending answer");
-            pc.createAnswer({
+        this._pc.setRemoteDescription(new RTCSessionDescription(jsep)).then(() => {
+            this._pc.createAnswer({
                 mandatory: {
                     OfferToReceiveAudio: true,
                     OfferToReceiveVideo: true
                 }
             }).then((answer) => {
-                pc.setLocalDescription(answer);
+                this._pc.setLocalDescription(answer);
 
-                console.log("Starting stream");
-                this.state.handle.message({ request: "start" }, answer).then((res) => {
-                    console.log(res);
-                });
+                console.log("Janus: Starting stream");
+                this._handle.message({ request: "start" }, answer);
             });
 
         });
     }
 
-    componentDidMount(){
-        let session = new Session(this.props.janusEndpoint);
+    open(onopen, onclose){
+        this.onopen = onopen;
+        this.onclose = onclose;
 
-        session.on("connected", () => {
-            console.log("connected");
-            session.attach("janus.plugin.streaming").then((handle) => {
-                console.log("attached");
-                this.setState({ handle });
-				handle.on("event", (data) => {
-                    console.log("event", data);
-                    if(data.jsep) this._createPC(data.jsep);
-				});
-                this._initialize(handle);
+        this._session = new Session(this.janusEndpoint);
+        this._session.on("connected", () => {
+            console.log("Janus: connected");
+            this._session.attach("janus.plugin.streaming").then((handle) => {
+                this._handle = handle;
+
+                console.log("Janus: attached");
+                handle.on("event", (data) => {
+                    if(data.result && data.result.status){
+                        console.log("Janus: " + data.result.status);
+                    }
+
+                    if(data.jsep){
+                        this._openPC(data.jsep); 
+                    }
+                });
+                this._watchStream();
             })
         });
 
-        session.on("webrtcup", () => {
-            console.log("webrtcup");
+        this._session.on("webrtcup", () => {
+            console.log("Janus: webrtcup");
         })
-        session.on("media", (data) => {
-            console.log("media", data);
+        this._session.on("media", (data) => {
+            console.log("Janus: media", data);
         })
-        session.on("hangup", () => {
-            console.log("hangup");
+        this._session.on("hangup", () => {
+            console.log("Janus: hangup");
+            this.close();
         })
-        session.on("destroyed", () => {
-            console.log("destroyed");
+        this._session.on("destroyed", () => {
+            console.log("Janus: destroyed");
+            this.close();
         })
 
-        this.setState({ session });
+    }
+
+    close(){
+        this._session.destroy().then(() => this.onclose());
+    }
+}
+
+export default class Signaling extends React.Component{
+    constructor(props){
+        super(props);
+        this.wrapper = null;
+        this.state = {
+            stream: null  // Stream object, to be used as video.srcObject
+        }
     }
 
     render(){
-        if(!this.state.stream) return <div />;
-        else return <VideoStream stream={this.state.stream} />;
+        /*
+         * Handling this inside render() is probably not the nicest of solutions,
+         * however all repercussions are async
+         */
+        if(!this.props.alive && this.wrapper){
+            this.wrapper.close();
+            this.wrapper = null;
+        }else if(this.props.alive && !this.wrapper){
+            this.wrapper = new JanusWrapper(this.props.janusEndpoint);
+            this.wrapper.open(
+                (stream) => this.setState({ stream }),
+                () => this.setState({ stream: null })
+            );
+
+        }
+
+        return React.Children.map(this.props.children,
+            child => React.cloneElement(child, { stream: this.state.stream }));
     }
 }
