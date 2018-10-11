@@ -5,13 +5,16 @@ import {
     View
 } from 'react-native';
 
+import Signaling from './js/Signaling'
 import Videostream from './js/Videostream'
 
 export default class App extends Component {
     render() {
         return (
             <View style={styles.container}>
-                <Videostream alive={true} addr={'janus.conf.meetecho.com'} useSSL={true} />
+                <Signaling alive={true} janusEndpoint='http://172.16.0.105:5000/janus'>
+                    <Videostream />
+                </Signaling>
             </View>
         );
     }
