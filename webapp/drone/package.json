@@ -7,16 +7,14 @@
     "test": "jest"
   },
   "dependencies": {
-    "@babel/runtime": "^7.1.2",
-    "@ndarilek/janus": "^0.5.1",
     "react": "16.5.0",
     "react-native": "0.57.2",
-    "react-native-webrtc": "^1.67.1"
+    "react-native-gstreamer": "^2.0.6"
   },
   "devDependencies": {
     "babel-jest": "23.6.0",
     "jest": "23.6.0",
-    "metro-react-native-babel-preset": "0.48.0",
+    "metro-react-native-babel-preset": "0.48.1",
     "react-test-renderer": "16.5.0"
   },
   "jest": {
