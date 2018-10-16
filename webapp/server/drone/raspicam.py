@@ -1,5 +1,6 @@
 import picamera
 import traceback
+import os
 
 SEP = {
     'h264': b'\x00\x00\x00\x01',
@@ -30,18 +31,23 @@ DEFAULT_IMAGE = {
     'resolution': (2592, 1944),
 }
 
+
 def _patch_with_default(options, defaults):
     for d in defaults:
         options[d] = options.get(d, defaults[d])
 
+
 class RaspiCam:
-    def __init__(self):
+    def __init__(self, gallery):
+        self.gallery = gallery
+
         self._camera = picamera.PiCamera()
         self._on_frame_handlers = []
         self._dat = bytearray()
 
         self._current_video_config = None
         self._current_video_mode = None
+        self._current_video_path = None
         self._current_video_file = None
 
     def __enter__(self):
@@ -110,7 +116,7 @@ class RaspiCam:
 
         return options_at_call
 
-    def start(self, mode='stream', path=None, **kwargs):
+    def start(self, mode='stream', **kwargs):
         """
         Start recording and return
 
@@ -120,10 +126,6 @@ class RaspiCam:
                 (saving will not be restarted after image)
             'file': Only save to path (will not be restarted after image)
         """
-        if mode == 'both' or mode == 'file':
-            if path is None:
-                raise Exception("Need to supply path")
-
         self.stop()
 
         options = dict(kwargs)
@@ -132,6 +134,21 @@ class RaspiCam:
         """
         Store
         """
+        path = None
+        if mode == 'both' or mode == 'file':
+            path = self.gallery.new_video(format=options['format'])
+
+            """
+            Change to .filename during recording
+            """
+            path = os.path.join(
+                os.path.dirname(path),
+                '.' + os.path.basename(path)
+            )
+            self._current_video_path = path
+        else:
+            self._current_video_path = None
+
         self._current_video_config = options
         self._current_video_mode = mode
         if mode == 'both':
@@ -155,7 +172,20 @@ class RaspiCam:
             self._current_video_file.close()
             self._current_video_file = None
 
-    def image(self, path, **kwargs):
+        """
+        Videos are stored as .filename at first and after recording
+        is finished moved to filename
+        """
+        if self._current_video_path is not None:
+            path = os.path.join(
+                os.path.dirname(self._current_video_path),
+                os.path.basename(self._current_video_path)[1:]
+            )
+
+            os.rename(self._current_video_path, path)
+            self._current_video_path = None
+
+    def image(self, **kwargs):
         """
         Synchronously take image
         """
@@ -174,6 +204,8 @@ class RaspiCam:
         _patch_with_default(options, DEFAULT_IMAGE)
 
         options_at_call = self._handle_options(options)
+
+        path = self.gallery.new_image(format='jpg')
         self._camera.capture(path, **options_at_call)
 
         if resume_mode is not None and resume_config is not None:

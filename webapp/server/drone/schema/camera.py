@@ -2,10 +2,12 @@ import graphene
 import json
 
 
-class Camera(graphene.ObjectType):
-    def __init__(self, server):
+class CameraType(graphene.ObjectType):
+    def __init__(self, server, **kwargs):
+        super().__init__(**kwargs)
         self._server = server
 
+    id = graphene.String()
     config = graphene.String()
     ws_port = graphene.Int()
 
