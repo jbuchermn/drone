@@ -1,8 +1,11 @@
 import graphene
 
+from .camera import Camera
+
 
 class Query(graphene.ObjectType):
-    tmp = graphene.String()
+    camera = graphene.Field(Camera)
 
-    def resolve_tmp(self, info):
-        return str(info.context['server'])
+    def resolve_camera(self, info):
+        server = info.context['server']
+        return Camera(server)

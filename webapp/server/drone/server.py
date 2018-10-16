@@ -11,9 +11,11 @@ from .schema import schema
 
 class Server:
     def __init__(self):
-        self._cam = RaspiCam()
-        self._cam_broadcast = WSBroadcast('cam', 8088)
-        self._cam_broadcast.start()
+        self.cam = RaspiCam()
+        self.cam_broadcast = WSBroadcast('cam', 8088)
+        self.cam.on_frame(self.cam_broadcast.message)
+        self.cam_broadcast.start()
+        self.cam.start(mode='stream')
 
     def __enter__(self):
         return self
@@ -24,15 +26,16 @@ class Server:
         self.close()
 
     def close(self):
-        self._cam.close()
-        self._cam_broadcast.stop()
+        self.cam.close()
+        self.cam_broadcast.stop()
 
 
 def run(*args, **kwargs):
     with Server() as server:
         app = Flask(__name__,
-                    static_folder='../client/dist',
-                    template_folder='../client')
+                    static_folder='../../client',
+                    static_url_path='',
+                    template_folder='../../client')
 
         @app.route('/')
         def index():

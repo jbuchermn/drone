@@ -6,6 +6,34 @@ SEP = {
     'mjpeg': b'\xFF\xD8'
 }
 
+PROPS = [
+    "framerate",
+    "resolution",
+    "vflip",
+    "hflip"
+]
+
+DEFAULT_VIDEO = {
+    'vflip': True,
+    'hflip': True,
+    'resolution': (1280, 720),
+    'framerate': 30,
+    'format': 'h264',
+    'profile': 'baseline',
+    'quality': 30,
+    'bitrate': 2000000
+}
+
+DEFAULT_IMAGE = {
+    'vflip': True,
+    'hflip': True,
+    'quality': 100,
+    'resolution': (2592, 1944),
+}
+
+def _patch_with_default(options, defaults):
+    for d in defaults:
+        options[d] = options.get(d, defaults[d])
 
 class RaspiCam:
     def __init__(self):
@@ -39,6 +67,12 @@ class RaspiCam:
         return self._current_video_mode == 'both' or \
             self._current_video_mode == 'file'
 
+    def current_config(self):
+        if self._current_video_config is None:
+            return None
+        else:
+            return dict(self._current_video_config)
+
     def write(self, b):
         """
         Called during recording by the camera in modes 'stream' and 'both'
@@ -66,6 +100,17 @@ class RaspiCam:
                 f(frame)
             i = self._dat.find(sep, i + len(sep))
 
+    def _handle_options(self, options):
+        options_at_call = {v: options[v] for v in options if v not in PROPS}
+        options_at_object = {v: options[v] for v in options if v in PROPS}
+
+        for v in options_at_object:
+            prop = getattr(type(self._camera), v)
+            if prop.fget(self._camera) != options_at_object[v]:
+                prop.fset(self._camera, options_at_object[v])
+
+        return options_at_call
+
     def start(self, mode='stream', path=None, **kwargs):
         """
         Start recording and return
@@ -83,23 +128,19 @@ class RaspiCam:
         self.stop()
 
         options = dict(kwargs)
-        options['format'] = options.get("format", "mjpeg")
+        _patch_with_default(options, DEFAULT_VIDEO)
 
+        """
+        Store
+        """
         self._current_video_config = options
         self._current_video_mode = mode
         if mode == 'both':
             self._current_video_file = open(path, 'wb')
 
-        resolution = options.get("resolution", (1280, 720))
-        framerate = options.get("framerate", 30)
-        options_stripped = {v: options[v] for v in options
-                            if v not in ["resolution", "framerate"]}
-
-        self._camera.resolution = resolution
-        self._camera.framerate = framerate
-
+        options_at_call = self._handle_options(options)
         stream = path if mode == 'file' else self
-        self._camera.start_recording(stream, **options_stripped)
+        self._camera.start_recording(stream, **options_at_call)
 
     def stop(self):
         """
@@ -130,12 +171,11 @@ class RaspiCam:
 
         self.stop()
 
-        resolution = kwargs.get("resolution", (2592, 1944))
-        options_stripped = {v: kwargs[v] for v in kwargs
-                            if v not in ["resolution", "framerate"]}
+        options = dict(kwargs)
+        _patch_with_default(options, DEFAULT_IMAGE)
 
-        self._camera.resolution = resolution
-        self._camera.capture(path, **options_stripped)
+        options_at_call = self._handle_options(options)
+        self._camera.capture(path, **options_at_call)
 
         if resume_mode is not None and resume_config is not None:
             self.start(mode=resume_mode, **resume_config)
