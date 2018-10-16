@@ -18,10 +18,9 @@ DEFAULT_VIDEO = {
     'hflip': True,
     'resolution': (1280, 720),
     'framerate': 30,
-    'format': 'h264',
-    'profile': 'baseline',
-    'quality': 30,
-    'bitrate': 2000000
+    'format': 'mjpeg',
+    'quality': 50,
+    'bitrate': 100000000
 }
 
 DEFAULT_IMAGE = {

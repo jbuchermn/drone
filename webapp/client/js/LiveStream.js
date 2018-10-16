@@ -5,53 +5,105 @@ import MJPEGplayer from './MJPEGplayer'
 export default class LiveStream extends React.Component{
     constructor(props){
         super(props);
-        this.canvasRef = React.createRef();
+        this.state = { 
+            player: null,
+            ws: null, 
+            url: null,
+            width: null,
+            height: null, 
+            format: null
+        };
+        this._canvasRef = React.createRef();
+        this._interval = null;
     }
 
-    componentDidMount(){
+    setup(){
+        let ip = location.host;
+        if(ip.includes(":")){
+            ip = ip.split(":")[0];
+        }
+
+        let url = "ws://" + ip + ":" + this.props.port;
+        let width = this.props.config.resolution[0];
+        let height = this.props.config.resolution[1];
+        let format = this.props.config.format
+
+        if(this.state.player && this.state.ws){
+            if(
+                (this.state.url == url) &&
+                (this.state.width == width) &&
+                (this.state.height == height) &&
+                (this.state.format == format)){
+
+                // All good
+            }else{
+
+                // Reopen
+                this.state.ws.close();
+            }
+
+            return;
+        }
+
         let PlayerClass = null;
-        if(this.props.config.format == 'mjpeg'){
+        if(format == 'mjpeg'){
             PlayerClass = MJPEGplayer;
-        }else if(this.props.config.format == 'h264'){
+        }else if(format == 'h264'){
             PlayerClass = WSAvc;
         }else{
             console.log("Unsupported:", this.props.config.format)
             return;
         }
 
-        this.player = new PlayerClass(
-            this.canvasRef.current,
-            {
-                width: this.props.config.resolution[0],
-                height: this.props.config.resolution[1]
-            }
+        let player = new PlayerClass(
+            this._canvasRef.current,
+            { width, height }
         );
 
-        let ip = location.host;
-        if(ip.includes(":")){
-            ip = ip.split(":")[0];
-        }
-        let url = "ws://" + ip + ":" + this.props.port;
 
-        this.ws = new WebSocket(url);
-        this.ws.binaryType = "arraybuffer";
+        let ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
 
-        this.ws.onopen = () => {
+        ws.onopen = () => {
             console.log("Connected to " + url);
+            this.setState({ 
+                player, 
+                ws, 
+                url,
+                width,
+                height,
+                format
+            });
         };
 
-        this.ws.onclose = () => {
-            console.log("Connection to " + url + " closed");
-            this.player.close();
+        ws.onclose = () => {
+            if(this.state.player) this.state.player.close();
+            this.setState({ 
+                player: null, 
+                ws: null,
+                url: null,
+                width: null,
+                height: null,
+                format: null
+            });
         };
 
-        this.ws.onmessage = (evt) => {
+        ws.onmessage = (evt) => {
             let frame = new Uint8Array(evt.data);
-            this.player.on_frame(frame);
+            if(this.state.player) this.state.player.on_frame(frame);
         }
+
+    }
+
+    componentDidMount(){
+        this._interval = setInterval(() => this.setup(), 1000);
+    }
+
+    componentWillUnmount(){
+        clearInterval(this._interval);
     }
 
     render () {
-        return <canvas ref={this.canvasRef} />;
+        return <canvas ref={this._canvasRef} />;
     }
 }
