@@ -4,10 +4,10 @@ from flask_graphql import GraphQLView
 import random
 
 
-from .gallery import Gallery
-from .ws_broadcast import WSBroadcast
-from .raspicam import RaspiCam
 from .schema import schema
+from .ws_broadcast import WSBroadcast
+from .camera.gallery import Gallery
+from .camera.raspicam import RaspiCam
 
 
 class Server:
