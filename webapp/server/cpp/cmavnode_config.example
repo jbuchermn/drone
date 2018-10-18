@@ -1,0 +1,9 @@
+[master]
+        type=serial
+        port=/dev/ttyAMA0
+        baud=115200
+
+[slave]
+        type=socket
+        targetip=172.16.0.106
+        targetport=14550

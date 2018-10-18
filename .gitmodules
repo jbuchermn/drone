@@ -1,3 +1,6 @@
 [submodule "webapp/server/cpp/ws_broadcast/lib/websocketpp"]
 	path = webapp/server/cpp/ws_broadcast/lib/websocketpp
 	url = https://github.com/zaphoyd/websocketpp
+[submodule "webapp/server/cpp/cmavnode"]
+	path = webapp/server/cpp/cmavnode
+	url = https://github.com/MonashUAS/cmavnode
