@@ -1,0 +1,3 @@
+[submodule "webapp/server/cpp/ws_broadcast/lib/websocketpp"]
+	path = webapp/server/cpp/ws_broadcast/lib/websocketpp
+	url = https://github.com/zaphoyd/websocketpp
