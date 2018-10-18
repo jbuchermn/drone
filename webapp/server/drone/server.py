@@ -8,18 +8,23 @@ from .schema import schema
 from .ws_broadcast import WSBroadcast
 from .camera.gallery import Gallery
 from .camera.raspicam import RaspiCam
+from .quad.mav import MAV
 
 
 class Server:
     def __init__(self):
         self.gallery = Gallery('/home/pi/Camera')
         self.gallery.observe()
+
         self.cam_broadcast = WSBroadcast('cam', 8088)
         self.cam_broadcast.start()
 
         self.cam = RaspiCam(self.gallery)
         self.cam.on_frame(self.cam_broadcast.message)
         self.cam.start(mode='stream')
+
+        self.mav = MAV(conn="/dev/ttyAMA0", baud=115200)
+        self.mav.set_proxy("172.16.0.106:14550")
 
     def __enter__(self):
         return self
@@ -31,8 +36,9 @@ class Server:
 
     def close(self):
         self.gallery.close()
-        self.cam.close()
         self.cam_broadcast.stop()
+        self.cam.close()
+        self.mav.close()
 
 
 def run(*args, **kwargs):

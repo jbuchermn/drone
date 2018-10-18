@@ -52,6 +52,7 @@ class MAVLinkConnectionReceiver(Thread):
 
 class MAVLinkConnection:
     def __init__(self, conn, max_hz=100, **kwargs):
+        print("Opening MAVLink connection to '%s'..." % conn)
         self._conn = mavutil.mavlink_connection(conn, **kwargs)
         self._send = MAVLinkConnectionSender(self._conn, max_hz)
         self._receive = MAVLinkConnectionReceiver(self._conn,
@@ -69,6 +70,9 @@ class MAVLinkConnection:
         self._send.send(msg_bytes)
 
     def _handle_msg(self, msg):
+        if msg.get_type() == "BAD_DATA":
+            return
+
         for handler in self._on_msg:
             handler(msg)
 
