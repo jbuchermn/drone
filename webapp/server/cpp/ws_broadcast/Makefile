@@ -1,7 +1,7 @@
-CXX = g++-8
+CXX = g++
 
 CXX_FLAGS = -I./lib/websocketpp 
-LD_FLAGS = -lboost_system -lboost_program_options
+LD_FLAGS = -lboost_system -lboost_program_options -lpthread
 
 
 ws_broadcast: main.o

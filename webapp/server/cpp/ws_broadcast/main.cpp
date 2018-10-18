@@ -42,7 +42,9 @@ private:
 
 public:
     broadcast_server() {
+	server.set_reuse_addr(true);
         server.init_asio();
+        server.clear_access_channels(websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload);
         server.set_open_handler(bind(&broadcast_server::on_open,this,::_1));
         server.set_close_handler(bind(&broadcast_server::on_close,this,::_1));
         server.set_message_handler(bind(&broadcast_server::on_message,this,::_1,::_2));
@@ -91,6 +93,8 @@ public:
             unique_lock<mutex> lock(action_lock);
             while(frames.empty()) action.wait(lock);
 
+	    while(frames.size() > 3) frames.pop();
+
             frame_t frame;
             {
                 lock_guard<mutex> guard(frames_lock);
@@ -107,7 +111,7 @@ public:
 };
 
 
-#define BUFFER_SIZE 1000000
+#define BUFFER_SIZE 10000000
 #define READ_SIZE 1000
 
 class video_stream_stdin{
@@ -146,12 +150,9 @@ public:
             }
 
             if(found == delimiter.size()){
-                // Frame: [frame_start_pos, i - delimiter.size() + 1)
-                std::cerr << "[" << frame_start_pos << "," << i - delimiter.size() + 1 << ")" << std::endl;
-
                 // Copy frame to new location and hand over to server
                 frame_t frame(i - delimiter.size() + 1 - frame_start_pos);
-                std::memcpy(buffer.data() + frame_start_pos, frame.data(), frame.size());
+                std::memcpy(frame.data(), buffer.data() + frame_start_pos, frame.size());
                 server->dispatch(std::move(frame));
 
                 frame_start_pos = i - delimiter.size() + 1;
@@ -173,7 +174,7 @@ public:
             // Is the buffer too small to hold an entire frame?
             assert(frame_start_pos != 0);
 
-            std::memcpy(buffer.data() + frame_start_pos, buffer.data(), BUFFER_SIZE - frame_start_pos);
+            std::memcpy(buffer.data(), buffer.data() + frame_start_pos, BUFFER_SIZE - frame_start_pos);
         }
     }
 };
@@ -201,10 +202,38 @@ int main(int argc, char* argv[]) {
 
     if(vm.count("delimiter")){
         std::string delim = vm["delimiter"].as<std::string>();
+        bool first = true;
+		for(auto s: delim){
+            uint8_t tmp = 0;
+	    	if(s >= '0' and s<= '9'){
+				tmp = s - '0';
+			}else if(s >= 'a' and s <= 'f'){
+				tmp = s - 'a' + 10;
+			}else if(s >= 'A' and s <= 'F'){
+				tmp = s - 'A' + 10;
+			}else{
+				std::cout << "Unsupported: " << s << std::endl;
+				exit(1);
+			}
+
+            if(first){
+                delimiter.push_back(16 * tmp);
+            }else{
+                delimiter.back() += tmp;
+            }
+
+            first = !first;
+		}
     }else{
         std::cout << "Need to supply delimiter" << std::endl;
         exit(1);
     }
+
+    std::cout << "Starting WS server on port " << port << ", delimiter = ";
+    for(auto v: delimiter){
+        std::cout << int(v) << " ";
+    }
+    std::cout << std::endl;
 
     try {
         broadcast_server server;
