@@ -2,6 +2,8 @@ import picamera
 import traceback
 import os
 
+from ..util.ws_broadcast import WSBroadcast
+
 SEP = {
     'h264': b'\x00\x00\x00\x01',
     'mjpeg': b'\xFF\xD8'
@@ -38,7 +40,7 @@ def _patch_with_default(options, defaults):
 
 
 class RaspiCam:
-    def __init__(self, gallery):
+    def __init__(self, gallery, ws_port=None):
         self.gallery = gallery
 
         self._camera = picamera.PiCamera()
@@ -49,6 +51,10 @@ class RaspiCam:
         self._current_video_mode = None
         self._current_video_path = None
         self._current_video_file = None
+
+        self._ws_broadcast = WSBroadcast('raspicam', ws_port if ws_port is not None else 8088)
+        self.on_frame(self._ws_broadcast.message)
+        self._ws_broadcast.start()
 
     def __enter__(self):
         return self
@@ -61,6 +67,7 @@ class RaspiCam:
     def close(self):
         self.stop()
         self._camera.close()
+        self._ws_broadcast.stop()
 
     def on_frame(self, handler):
         self._on_frame_handlers += [handler]
@@ -210,6 +217,9 @@ class RaspiCam:
 
         if resume_mode is not None and resume_config is not None:
             self.start(mode=resume_mode, **resume_config)
+
+    def get_ws_port(self):
+        return self._ws_broadcast.port
 
 
 if __name__ == '__main__':

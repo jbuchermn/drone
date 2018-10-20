@@ -16,5 +16,5 @@ class CameraType(graphene.ObjectType):
         return json.dumps(config)
 
     def resolve_ws_port(self, info):
-        return self._server.cam_broadcast.port
+        return self._server.cam.get_ws_port()
 
