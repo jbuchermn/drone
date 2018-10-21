@@ -2,6 +2,10 @@ import picamera
 import traceback
 import os
 
+from ..util.ws_broadcast import WSBroadcast
+from ..util.non_blocking_file import NonBlockingFile
+from ..util.bitrate import Bitrate
+
 SEP = {
     'h264': b'\x00\x00\x00\x01',
     'mjpeg': b'\xFF\xD8'
@@ -19,9 +23,9 @@ DEFAULT_VIDEO = {
     'hflip': True,
     'resolution': (1280, 720),
     'framerate': 30,
-    'format': 'mjpeg',
-    'quality': 50,
-    'bitrate': 100000000
+    'format': 'h264',
+    'quality': 10,
+    'bitrate': 25000000
 }
 
 DEFAULT_IMAGE = {
@@ -38,7 +42,7 @@ def _patch_with_default(options, defaults):
 
 
 class RaspiCam:
-    def __init__(self, gallery):
+    def __init__(self, gallery, ws_port=None):
         self.gallery = gallery
 
         self._camera = picamera.PiCamera()
@@ -49,6 +53,11 @@ class RaspiCam:
         self._current_video_mode = None
         self._current_video_path = None
         self._current_video_file = None
+
+        self._bitrate = Bitrate('raspicam')
+
+        self._ws_broadcast = WSBroadcast('raspicam', ws_port if ws_port is not None else 8088)
+        self._ws_broadcast.start()
 
     def __enter__(self):
         return self
@@ -61,9 +70,10 @@ class RaspiCam:
     def close(self):
         self.stop()
         self._camera.close()
+        self._ws_broadcast.stop()
 
-    def on_frame(self, handler):
-        self._on_frame_handlers += [handler]
+        if self._current_video_file is not None:
+            self._current_video_file.close()
 
     def is_recording(self):
         """
@@ -79,16 +89,15 @@ class RaspiCam:
             return dict(self._current_video_config)
 
     def write(self, b):
-        """
-        Called during recording by the camera in modes 'stream' and 'both'
-        """
         if self._current_video_config is None:
             return
 
+        self._bitrate.register(len(b))
+
         """
-        Handle file in mode 'both'
+        Handle file
         """
-        if self._current_video_file is not None:
+        if self.is_recording():
             self._current_video_file.write(b)
 
         """
@@ -101,8 +110,7 @@ class RaspiCam:
         while i != -1:
             frame = self._dat[0:i]
             self._dat = self._dat[i:]
-            for f in self._on_frame_handlers:
-                f(frame)
+            self._ws_broadcast.message(frame)
             i = self._dat.find(sep, i + len(sep))
 
     def _handle_options(self, options):
@@ -146,13 +154,13 @@ class RaspiCam:
                 '.' + os.path.basename(path)
             )
             self._current_video_path = path
+            self._current_video_file = NonBlockingFile(path, 'wb')
+            self._current_video_file.start()
         else:
             self._current_video_path = None
 
         self._current_video_config = options
         self._current_video_mode = mode
-        if mode == 'both':
-            self._current_video_file = open(path, 'wb')
 
         options_at_call = self._handle_options(options)
         stream = path if mode == 'file' else self
@@ -211,54 +219,6 @@ class RaspiCam:
         if resume_mode is not None and resume_config is not None:
             self.start(mode=resume_mode, **resume_config)
 
-
-if __name__ == '__main__':
-    import time
-
-    with RaspiCam() as cam:
-        """
-        Test 1: Take a JPEG
-        """
-        print("Taking picture...")
-        cam.image("test1.jpg")
-
-        """
-        Test 2: Record MJPEG directly to file
-        """
-        print("Starting mode == 'file'...")
-        cam.start(mode='file', path='test2.mjpeg',
-                  format='mjpeg',
-                  quality=90,
-                  resolution=(1920, 1080),
-                  framerate=30,
-                  bitrate=100000000)
-        time.sleep(5)
-        print("Is recording? %s" % cam.is_recording())
-        cam.stop()
-        print("...done")
-        print("Is recording? %s" % cam.is_recording())
-
-        """
-        Test 3: Stream MJPEG and save it simultaneously
-        """
-        with open('test3_2.mjpeg', 'wb') as outf:
-            def write(frame):
-                outf.write(frame)
-            cam.on_frame(write)
-            print("Starting mode == 'both'...")
-            cam.start(mode='both', path='test3.mjpeg',
-                      format='mjpeg',
-                      quality=20,
-                      resolution=(1280, 720),
-                      framerate=30,
-                      bitrate=10000000)
-            time.sleep(5)
-            print("Is recording? %s" % cam.is_recording())
-            print("Interrupting with picture...")
-            cam.image("test4.jpg")
-            print("Is recording? %s" % cam.is_recording())
-            time.sleep(5)
-            cam.stop()
-            print("...done")
-            print("Is recording? %s" % cam.is_recording())
+    def get_ws_port(self):
+        return self._ws_broadcast.port
 

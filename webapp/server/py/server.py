@@ -5,10 +5,9 @@ import random
 
 
 from .schema import schema
-from .ws_broadcast import WSBroadcast
 from .camera.gallery import Gallery
 from .camera.raspicam import RaspiCam
-from .quad.mav import MAV
+from .quad.mavlink_proxy import MAVLinkProxy
 
 
 class Server:
@@ -16,15 +15,10 @@ class Server:
         self.gallery = Gallery('/home/pi/Camera')
         self.gallery.observe()
 
-        self.cam_broadcast = WSBroadcast('cam', 8088)
-        self.cam_broadcast.start()
-
-        self.cam = RaspiCam(self.gallery)
-        self.cam.on_frame(self.cam_broadcast.message)
+        self.cam = RaspiCam(self.gallery, ws_port=8088)
         self.cam.start(mode='stream')
 
-        self.mav = MAV(conn="/dev/ttyAMA0", baud=115200)
-        self.mav.set_proxy("172.16.0.106:14550")
+        self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
 
     def __enter__(self):
         return self
@@ -36,9 +30,8 @@ class Server:
 
     def close(self):
         self.gallery.close()
-        self.cam_broadcast.stop()
         self.cam.close()
-        self.mav.close()
+        self.mavlink_proxy.close()
 
 
 def run(*args, **kwargs):
