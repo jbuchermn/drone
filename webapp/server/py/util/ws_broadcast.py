@@ -1,6 +1,8 @@
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
 from threading import Thread
 
+from .bitrate import Bitrate
+
 
 class WSBroadcast(Thread):
     def __init__(self, name, port):
@@ -9,6 +11,7 @@ class WSBroadcast(Thread):
         self.port = port
         self.stopped = False
         self._server = SimpleWebSocketServer('', self.port, WebSocket)
+        self._bitrates = {}
 
     def stop(self):
         self.stopped = True
@@ -22,5 +25,9 @@ class WSBroadcast(Thread):
     def message(self, msg):
         for c in self._server.connections:
             if len(self._server.connections[c].sendq) <= 1:
+                if c not in self._bitrates:
+                    self._bitrates[c] = Bitrate('websocket: %s' % c)
+
+                self._bitrates[c].register(len(msg))
                 self._server.connections[c].sendMessage(msg)
 

@@ -7,7 +7,6 @@ CMAVNODE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              "..", "..", "cpp", "cmavnode", "build", "cmavnode")
 CMAVNODE_CONFIG = "/tmp/cmavnode.conf"
 
-print(CMAVNODE_PATH)
 
 class MAVLinkProxy:
     def __init__(self, master_port):

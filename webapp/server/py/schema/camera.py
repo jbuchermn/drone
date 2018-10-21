@@ -10,6 +10,7 @@ class CameraType(graphene.ObjectType):
     id = graphene.String()
     config = graphene.String()
     ws_port = graphene.Int()
+    recording = graphene.Boolean()
 
     def resolve_config(self, info):
         config = self._server.cam.current_config()
@@ -17,4 +18,7 @@ class CameraType(graphene.ObjectType):
 
     def resolve_ws_port(self, info):
         return self._server.cam.get_ws_port()
+
+    def resolve_recording(self, info):
+        return self._server.cam.is_recording()
 
