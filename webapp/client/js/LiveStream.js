@@ -1,11 +1,13 @@
-import React from "react"
-import WSAvc from './wsavc'
-import MJPEGplayer from './MJPEGplayer'
+import React from 'react';
+import WSAvc from './wsavc';
+import MJPEGplayer from './MJPEGplayer';
+import { IP } from './env';
 
 export default class LiveStream extends React.Component{
     constructor(props){
         super(props);
         this.state = { 
+            key: 1,
             player: null,
             ws: null, 
             url: null,
@@ -18,12 +20,7 @@ export default class LiveStream extends React.Component{
     }
 
     setup(){
-        let ip = location.host;
-        if(ip.includes(":")){
-            ip = ip.split(":")[0];
-        }
-
-        let url = "ws://" + ip + ":" + this.props.port;
+        let url = "ws://" + IP + ":" + this.props.port;
         let width = this.props.config.resolution[0];
         let height = this.props.config.resolution[1];
         let format = this.props.config.format
@@ -45,6 +42,23 @@ export default class LiveStream extends React.Component{
             return;
         }
 
+        let x, y, w, h;
+
+        let canvasAspect = this.props.width / this.props.height;
+        let imgAspect = width/height;
+
+        if(canvasAspect > imgAspect){
+            y = 0;
+            h = this.props.height;
+            w = this.props.height * imgAspect;
+            x = (this.props.width - w) / 2
+        }else{
+            x = 0
+            w = this.props.width;
+            h = this.props.width / imgAspect;
+            y = (this.props.height - h) / 2;
+        }
+
         let PlayerClass = null;
         if(format == 'mjpeg'){
             PlayerClass = MJPEGplayer;
@@ -57,7 +71,7 @@ export default class LiveStream extends React.Component{
 
         let player = new PlayerClass(
             this._canvasRef.current,
-            { width, height }
+            { x, y, w, h }
         );
 
 
@@ -77,6 +91,7 @@ export default class LiveStream extends React.Component{
         };
 
         ws.onclose = () => {
+            console.log("Connection to " + url + " closed");
             if(this.state.player) this.state.player.close();
             this.setState({ 
                 player: null, 
@@ -84,7 +99,8 @@ export default class LiveStream extends React.Component{
                 url: null,
                 width: null,
                 height: null,
-                format: null
+                format: null,
+                key: this.state.key + 1  // Force recreate canvas
             });
         };
 
@@ -104,6 +120,12 @@ export default class LiveStream extends React.Component{
     }
 
     render () {
-        return <canvas ref={this._canvasRef} />;
+        return (
+            <canvas 
+                key={this.state.key}
+                ref={this._canvasRef}
+                width={this.props.width}
+                height={this.props.height}/>
+        );
     }
 }

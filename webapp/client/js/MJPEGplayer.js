@@ -1,21 +1,18 @@
 export default class MJPEGplayer{
     constructor(canvas, {
-        width,
-        height
+        x, y, w, h
     }) {
-        if(!width) throw "Need to supply width";
-        if(!height) throw "Need to supply height";
-
-        canvas.width  = width;
-        canvas.height = height;
-
         let ctx = canvas.getContext('2d');
+        if(!ctx){
+            console.log("Unable to open canvas");
+            return;
+        }
 
         let img = new Image()
         let imgUrl = null;
 
         img.onload = () => {
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, x, y, w, h);
             (URL || webkitURL).revokeObjectURL(imgUrl);
         }
 

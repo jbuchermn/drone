@@ -8,10 +8,12 @@
     "watch": "webpack --progress -d --config webpack.config.js --watch"
   },
   "dependencies": {
+    "@material-ui/core": "^3.2.2",
     "apollo-boost": "^0.1.16",
     "graphql": "^14.0.2",
     "react": "^16.5.2",
     "react-apollo": "^2.2.4",
+    "react-composer": "^5.0.1",
     "react-dom": "^16.5.2",
     "sylvester.js": "^0.1.1",
     "uclass": "^2.4.0"

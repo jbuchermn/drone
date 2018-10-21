@@ -7,19 +7,14 @@ var Size = require('./utils/Size');
 export default class Wsavc{
     constructor(canvas, {
         type,
-        width,
-        height
+        x, y, w, h
     }) {
-        if(!width) throw "Need to supply width";
-        if(!height) throw "Need to supply height";
-
         type = type || "webgl";
 
-        canvas.width  = width;
-        canvas.height = height;
+        console.log("Warning!  No support for x, y at the moment");
 
         let canvasFactory = type == "webgl" ? YUVWebGLCanvas : YUVCanvas;
-        let yuv = new canvasFactory(canvas, new Size(width, height));
+        let yuv = new canvasFactory(canvas, new Size(w, h));
 
         let decoder = new Decoder();
         decoder.onPictureDecoded = yuv.decode;
