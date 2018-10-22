@@ -3,7 +3,7 @@ import time
 _streams = {}
 
 class Stream:
-    def __init__(self, name, keep=60):
+    def __init__(self, name, keep=600):
         self.name = name
         self.keep = keep
         self.t = []
@@ -16,10 +16,7 @@ class Stream:
         self.val += [val]
 
     def clean(self):
-        if len(self.t) == 0:
-            return
-
-        while self.t[0] < time.time() - self.keep:
+        while len(self.t) > 0 and self.t[0] < time.time() - self.keep:
             del self.t[0]
             del self.val[0]
 

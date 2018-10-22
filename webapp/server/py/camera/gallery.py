@@ -22,18 +22,9 @@ class GalleryObserver(Thread):
             + conversion[0]
         command = conversion[1] % (filename, new_filename)
 
-        print(command)
-        os.system(command)
-
-        if os.path.isfile(new_filename):
-            """
-            Very simple check if conversion did work
-            """
-            old_size = os.stat(filename).st_size
-            new_size = os.stat(new_filename).st_size
-
-            if new_size >= .9*old_size:
-                os.remove(filename)
+        if not os.path.isfile(new_filename):
+            print(command)
+            os.system(command)
 
     def run(self):
         while self.running:
