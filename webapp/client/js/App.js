@@ -2,28 +2,39 @@ import React from 'react';
 import { Query } from 'react-apollo';
 import gql from 'graphql-tag';
 
-import { ADDR } from './env';
+import Gallery from './Gallery';
 import Camera from './Camera';
 import Streams from './Streams';
 
+const HEARTBEAT_QUERY = gql`
+query {
+    camera {
+        id
+    }
+}
+`;
+
+function NotConnected(props){
+    return <p>Not connected</p>
+}
+
 export default function App(props){
     return (
-        <div>
-            <Camera width={1280} height={720}/>
-            <Streams width={1280} height={720}/>
-            <Query query={gql`{ gallery { id, entries { id, kind, name } } }`} pollInterval={1000}>
-                {({ loading, error, data }) => {
-                    if (loading) return <p>Loading...</p>;
-                    if (error) return <p>Error</p>;
-
-                    return data.gallery.entries.map(e => (
-                        <p><a 
-                            href={ADDR + "/gallery/" + e.kind + "/" + e.name} 
-                            target={"_blank"}>{e.name}</a></p>
-                    ));
-                }}
-            </Query>
-        </div>
+        <Query
+            query={HEARTBEAT_QUERY}
+            fetchPolicy={"network-only"}
+            pollInterval={1000}>
+            {({ loading, error, data }) => {
+                if (loading || error) return <NotConnected />;
+                return (
+                    <div>
+                        <Camera width={1280} height={720}/>
+                        <Streams width={1280} height={720}/>
+                        <Gallery />
+                    </div>
+                );
+            }}
+        </Query>
     );
     
 }
