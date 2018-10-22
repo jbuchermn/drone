@@ -3,9 +3,9 @@ import ReactDOM from "react-dom";
 import ApolloClient from "apollo-boost";
 import { ApolloProvider } from "react-apollo";
 import App from "./App";
-import { IP, PORT } from "./env";
+import { ADDR } from "./env";
 
-const client = new ApolloClient({ uri: "http://" + IP + ":" + PORT + "/graphql" });
+const client = new ApolloClient({ uri: ADDR + "/graphql" });
 
 const Root = () => (
     <ApolloProvider client={client}>

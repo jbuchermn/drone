@@ -11,7 +11,7 @@ import {
     DiscreteColorLegend
 } from 'react-vis';
 
-import { IP, PORT } from './env';
+import { ADDR } from './env';
 import Camera from './Camera';
 
 export default function App(props){
@@ -24,7 +24,7 @@ export default function App(props){
 
                 return data.gallery.entries.map(e => (
                     <p><a 
-                        href={"http://" + IP +":" + PORT + "/gallery/" + e.kind + "/" + e.name} 
+                        href={ADDR + "/gallery/" + e.kind + "/" + e.name} 
                         target={"_blank"}>{e.name}</a></p>
                 ));
             }}
