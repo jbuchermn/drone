@@ -1,5 +1,5 @@
 import traceback
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, request
 from flask_graphql import GraphQLView
 import random
 
@@ -8,6 +8,7 @@ from .schema import schema
 from .camera.gallery import Gallery
 from .camera.raspicam import RaspiCam
 from .quad.mavlink_proxy import MAVLinkProxy
+from .util.ping import Ping
 
 
 class Server:
@@ -20,6 +21,9 @@ class Server:
 
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
 
+        self.client_ip = None
+        self.client_ping = None
+
     def __enter__(self):
         return self
 
@@ -28,10 +32,22 @@ class Server:
             traceback.print_exception(exc_type, exc_value, tb)
         self.close()
 
+    def set_client_ip(self, ip):
+        self.client_ip = ip
+        if self.client_ping is not None:
+            if self.client_ping.ip != self.client_ip:
+                self.client_ping.close()
+
+        self.client_ping = Ping(self.client_ip)
+        self.client_ping.start()
+
+
     def close(self):
         self.gallery.close()
         self.cam.close()
         self.mavlink_proxy.close()
+        if self.client_ping is not None:
+            self.client_ping.close()
 
 
 def run(*args, **kwargs):
@@ -43,6 +59,7 @@ def run(*args, **kwargs):
 
         @app.route('/')
         def index():
+            server.set_client_ip(request.remote_addr)
             return render_template("index.html",
                                    rand=random.randint(1, 100000))
 
