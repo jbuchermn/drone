@@ -1,0 +1,14 @@
+# http://www.raspberryconnect.com/network/item/331-raspberry-pi-auto-wifi-hotspot-switch-no-internet-routing
+
+sudo apt install hostapd dnsmasq
+sudo systemctl disable hostapd
+sudo systemctl disable dnsmasq
+sudo cp etc_hostapd_hostapd.conf /etc/hostapd/hostapd.conf
+sudo echo "DAEMON_CONF=\"/etc/hostapd/hostapd.conf\"" >> /etc/default/hostapd
+sudo cp etc_dnsmasq.conf /etc/dnsmasq.conf
+# Ensure /etc/network/interfaces only contains "source-directory /etc/network/interfaces.d"
+# Add "nohook wpa_supplicant" to /etc/dhcpcd.conf
+sudo cp etc_systemd_system_autohotspot.service /etc/systemd/system/autohotspot.service
+sudo systemctl enable autohotspot.service
+sudo cp usr_bin_autohotspot /usr/bin/autohotspot
+sudo cp /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.backup
