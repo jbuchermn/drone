@@ -1,7 +1,7 @@
 import React from 'react';
 import WSAvc from './wsavc';
 import MJPEGplayer from './MJPEGplayer';
-import { IP } from './env';
+import { WS_ADDR } from './env';
 
 export default class LiveStream extends React.Component{
     constructor(props){
@@ -20,7 +20,12 @@ export default class LiveStream extends React.Component{
     }
 
     setup(){
-        let url = "ws://" + IP + ":" + this.props.port;
+        let url;
+        if(WS_ADDR == ""){
+            url = "ws://" + location.hostname + ":" + this.props.port;
+        }else{
+            url = WS_ADDR + ":" + this.props.port;
+        }
         let width = this.props.config.resolution[0];
         let height = this.props.config.resolution[1];
         let format = this.props.config.format

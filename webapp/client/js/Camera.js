@@ -218,8 +218,8 @@ class CameraInner extends React.Component{
                 <LiveStream 
                     port={this.props.camera.wsPort}
                     config={JSON.parse(this.props.camera.config)}
-                    width={1280}
-                    height={720} />
+                    width={this.props.width}
+                    height={this.props.height} />
                 <CameraButtons
                     recording={this.props.camera.recording}
                     takeVideo={_takeVideo}
@@ -242,37 +242,33 @@ class CameraInner extends React.Component{
     }
 }
 
-export default class Camera extends React.Component{
-    constructor(props){
-        super(props);
-    }
-
-    render(){
-        return (
-            <Composer components={[
-                <Query query={CAMERA_QUERY}/>,
-                <Mutation mutation={TAKE_VIDEO_MUTATION}/>,
-                <Mutation mutation={TAKE_PICTURE_MUTATION}/>,
-                <Mutation mutation={START_STREAM_MUTATION}/>,
-            ]}>
-                {([query, takeVideo, takePicture, startStream]) => {
+export default function Camera(props){
+    return (
+        <Composer components={[
+            <Query query={CAMERA_QUERY} pollInterval={1000}/>,
+            <Mutation mutation={TAKE_VIDEO_MUTATION}/>,
+            <Mutation mutation={TAKE_PICTURE_MUTATION}/>,
+            <Mutation mutation={START_STREAM_MUTATION}/>,
+        ]}>
+            {([query, takeVideo, takePicture, startStream]) => {
 
 
-                    let { loading, error, data } = query;
-                    if (loading) return <p>Loading...</p>;
-                    if (error) return <p>Error</p>;
+                let { loading, error, data } = query;
+                if (loading) return <p>Loading...</p>;
+                if (error) return <p>Error</p>;
 
-                    return (
-                        <CameraInner 
-                            camera={data.camera}
-                            takeVideo={takeVideo}
-                            takePicture={takePicture}
-                            startStream={startStream} />
-                    );
+                return (
+                    <CameraInner 
+                        width={props.width}
+                        height={props.height}
+                        camera={data.camera}
+                        takeVideo={takeVideo}
+                        takePicture={takePicture}
+                        startStream={startStream} />
+                );
 
-                }}
+            }}
 
         </Composer>
-        )
-    }
+    );
 }
