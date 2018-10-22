@@ -24,10 +24,13 @@ class Ping(Thread):
 
     def run(self):
         while self._running:
-            p = Popen(("ping %s -t 2" % self.ip).split(" "), stdout=PIPE)
+            p = Popen(("ping %s -c 2" % self.ip).split(" "), stdout=PIPE)
             stdout = p.communicate()[0].decode('utf-8').strip()
-            stdout = stdout.split("\n")[-1]
-            stdout = stdout.split("=")[1]
-            stdout = stdout.split("/")[2]  # 0: min, 1: avg, 2: max, 3: mdev
-            self._stream.register(float(stdout))
+            try:
+                stdout = stdout.split("\n")[-1]
+                stdout = stdout.split("=")[1]
+                stdout = stdout.split("/")[2]  # 0: min, 1: avg, 2: max, 3: mdev
+                self._stream.register(float(stdout))
+            except Exception:
+                self._stream.register(-1)
 
