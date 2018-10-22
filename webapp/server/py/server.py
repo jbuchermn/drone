@@ -37,9 +37,11 @@ class Server:
         if self.client_ping is not None:
             if self.client_ping.ip != self.client_ip:
                 self.client_ping.close()
-
-        self.client_ping = Ping(self.client_ip)
-        self.client_ping.start()
+                self.client_ping = None
+    
+        if self.client_ping is None:
+            self.client_ping = Ping(self.client_ip)
+            self.client_ping.start()
 
 
     def close(self):
@@ -59,7 +61,6 @@ def run(*args, **kwargs):
 
         @app.route('/')
         def index():
-            server.set_client_ip(request.remote_addr)
             return render_template("index.html",
                                    rand=random.randint(1, 100000))
 
@@ -67,11 +68,15 @@ def run(*args, **kwargs):
         def send_gallery(path):
             return send_from_directory(server.gallery.root_dir, path)
 
+        def get_context():
+            server.set_client_ip(request.remote_addr)
+            return {'server': server}
+
         app.add_url_rule('/graphql',
                          view_func=GraphQLView.as_view(
                              'graphql',
                              schema=schema,
                              graphiql=True,
-                             get_context=lambda: {'server': server}))
+                             get_context=get_context))
 
         app.run(*args, **kwargs)
