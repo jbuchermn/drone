@@ -2,8 +2,10 @@ import React from "react";
 import Composer from "react-composer";
 import { Query, Mutation } from "react-apollo";
 import gql from "graphql-tag";
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
+import {
+    Button,
+    TextField
+} from '@material-ui/core';
 
 
 import LiveStream from './LiveStream'

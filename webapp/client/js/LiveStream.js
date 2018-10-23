@@ -122,6 +122,9 @@ export default class LiveStream extends React.Component{
 
     componentWillUnmount(){
         clearInterval(this._interval);
+        if(this.state.ws){
+            this.state.ws.close();
+        }
     }
 
     render () {
