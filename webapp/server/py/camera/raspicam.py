@@ -21,11 +21,10 @@ PROPS = [
 DEFAULT_VIDEO = {
     'vflip': True,
     'hflip': True,
-    'resolution': (1280, 720),
+    'resolution': (640, 480),
     'framerate': 30,
-    'format': 'h264',
-    'quality': 10,
-    'bitrate': 25000000
+    'format': 'mjpeg',
+    'bitrate': 5000000
 }
 
 DEFAULT_IMAGE = {
