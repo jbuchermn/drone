@@ -1,7 +1,12 @@
 import traceback
+from subprocess import Popen, PIPE
+from threading import Thread
+import random
+import time
+import signal
+from werkzeug.serving import make_server
 from flask import Flask, render_template, send_from_directory, request
 from flask_graphql import GraphQLView
-import random
 
 
 from .schema import schema
@@ -9,6 +14,12 @@ from .camera.gallery import Gallery
 from .camera.raspicam import RaspiCam
 from .quad.mavlink_proxy import MAVLinkProxy
 from .util.ping import Ping
+
+def shutdown():
+    print("Shutting system down...")
+    command = "/usr/bin/sudo /sbin/shutdown --halt now"
+    process = Popen(command.split(), stdout=PIPE)
+    process.communicate()
 
 
 class Server:
@@ -22,6 +33,8 @@ class Server:
 
         self.client_ip = None
         self.client_ping = None
+
+        self.shutdown_requested = False
 
     def __enter__(self):
         return self
@@ -50,8 +63,32 @@ class Server:
         if self.client_ping is not None:
             self.client_ping.close()
 
+    def request_shutdown(self):
+        self.shutdown_requested = True
 
-def run(*args, **kwargs):
+
+
+class ServerThread(Thread):
+    def __init__(self, app, host, port):
+        super().__init__()
+        print(host, port)
+        self._srv = make_server(host, port, app)
+        self._ctx = app.app_context()
+        self._ctx.push()
+        self.running = False
+
+    def run(self):
+        self.running = True
+        self._srv.serve_forever()
+
+    def shutdown(self):
+        self._srv.shutdown()
+        self.running = False
+
+
+def run(host='0.0.0.0', port=5000):
+    shutdown_after_finish = False
+
     with Server() as server:
         app = Flask(__name__,
                     static_folder='../../client',
@@ -78,4 +115,26 @@ def run(*args, **kwargs):
                              graphiql=True,
                              get_context=get_context))
 
-        app.run(*args, **kwargs)
+
+        srv = ServerThread(app, host=host, port=port)
+        print("Starting webserver up...")
+        srv.start()
+
+        """
+        SIGINT (e.g. Ctrl-C) as graceful shutdown
+        """
+        def handle_sigint(sig, frame):
+            print("Shutting webserver down...")
+            srv.shutdown()
+        signal.signal(signal.SIGINT, handle_sigint)
+        
+        while srv.running:
+            time.sleep(1)
+            if server.shutdown_requested:
+                shutdown_after_finish = True
+                srv.shutdown()
+
+    if shutdown_after_finish:
+        shutdown()
+
+

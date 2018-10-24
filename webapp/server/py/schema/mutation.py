@@ -20,6 +20,8 @@ class Mutation(graphene.ObjectType):
     startMAVLinkProxy = graphene.Field(MAVLinkProxyType, addr=graphene.String(required=False))
     stopMAVLinkProxy = graphene.Field(MAVLinkProxyType)
 
+    shutdownServer = graphene.Field(graphene.Int)
+
     def resolve_startStream(self, info, config):
         server = info.context['server']
         config = json.loads(config)
@@ -60,3 +62,7 @@ class Mutation(graphene.ObjectType):
         server.mavlink_proxy.close()
         return MAVLinkProxyType(server, id="1")
 
+    def resolve_shutdownServer(self, info):
+        server = info.context['server']
+        server.request_shutdown()
+        return 0
