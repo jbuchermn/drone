@@ -129,11 +129,22 @@ export default class LiveStream extends React.Component{
 
     render () {
         return (
-            <canvas 
-                key={this.state.key}
-                ref={this._canvasRef}
-                width={this.props.width}
-                height={this.props.height}/>
+            <canvas style={styles.canvas}
+                    key={this.state.key}
+                    ref={this._canvasRef}
+                    width={this.props.width}
+                    height={this.props.height}/>
         );
+    }
+}
+
+const styles = {
+    canvas: {
+        paddingLeft: 0,
+        paddingRight: 0,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        display: 'block',
+        width: 800
     }
 }
