@@ -16,6 +16,7 @@
     "react-apollo": "^2.2.4",
     "react-composer": "^5.0.1",
     "react-dom": "^16.5.2",
+    "react-grid-gallery": "^0.5.3",
     "react-vis": "^1.11.3",
     "sylvester.js": "^0.1.1",
     "uclass": "^2.4.0"
