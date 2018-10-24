@@ -6,3 +6,4 @@ ssl
 **/.DS_Store
 **/._.DS_Store
 **/*.o
+webapp/server/log

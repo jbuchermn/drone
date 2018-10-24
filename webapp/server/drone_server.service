@@ -1,0 +1,9 @@
+[Unit]
+Description=Drone server
+
+[Service]
+ExecStart=/bin/sh /home/pi/drone/webapp/server/server
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
