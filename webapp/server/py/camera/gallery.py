@@ -2,81 +2,53 @@ import os
 import time
 from threading import Thread
 
-
-CONVERSIONS = {
-    'h264': ['mp4', 'ffmpeg -y -i %s -vcodec copy %s'],
-    'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
-}
-
-
-class GalleryObserver(Thread):
-    def __init__(self, gallery):
-        super().__init__()
-        self.gallery = gallery
-        self.running = True
-
-    def _handle_file(self, filename):
-        ext = filename.split(".")[-1]
-        conversion = CONVERSIONS[ext]
-        new_filename = filename.replace("vid_raw", "vid")[:-len(ext)] \
-            + conversion[0]
-        command = conversion[1] % (filename, new_filename)
-
-        if not os.path.isfile(new_filename):
-            print(command)
-            os.system(command)
-
-    def run(self):
-        while self.running:
-            files = os.listdir(os.path.join(self.gallery.root_dir, 'vid_raw'))
-            for f in files:
-                """
-                Skip files starting with . (these are internal in RaspiCam,
-                i. e. still opened)
-                """
-                if f.split(".")[-1] in CONVERSIONS and f[0] != ".":
-                    self._handle_file(
-                        os.path.join(self.gallery.root_dir, 'vid_raw', f))
-            time.sleep(2)
-
-    def close(self):
-        self.running = False
+from .converter import Converter
+from .entry import Entry
 
 
 class Gallery:
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        self._observer = GalleryObserver(self)
-
-        for f in ['img', 'vid', 'vid_raw']:
+        for f in ['img', 'vid', 'thumbnail', 'backup']:
             folder = os.path.join(self.root_dir, f)
             if not os.path.exists(folder):
                 os.makedirs(folder)
 
-    def close(self):
-        if self._observer is not None:
-            self._observer.close()
+        self._converter = Converter()
+        self._converter.start()
+        
+        self._entries = list(self._load_entries())
+        """
+        See if there is some post-processing left
+        """
+        for e in self._entries:
+            e.process()
 
-    def observe(self):
-        self._observer.start()
+    def _load_entries(self):
+        kind_name = set()
+        for kind in ['img', 'vid']:
+            for n in os.listdir(os.path.join(self.root_dir, kind)):
+                f = os.path.join(self.root_dir, kind, n)
+                yield Entry(self, kind, new=False, filename=f)
+
+
+    def add_job(self, job):
+        self._converter.add_job(job)
+
+    def close(self):
+        self._converter.close()
 
     def new_image(self, format='jpg'):
-        folder = os.path.join(self.root_dir, 'img')
-        filename = '%d.%s' % (time.time()*1000, format)
-        return os.path.join(folder, filename)
+        e = Entry(self, 'img', new=True, format=format)
+        self._entries += [e]
+        return e
 
     def new_video(self, format='mjpeg'):
-        folder = os.path.join(self.root_dir, 'vid_raw')
-        filename = '%d.%s' % (time.time()*1000, format)
-        return os.path.join(folder, filename)
+        e = Entry(self, 'vid', new=True, format=format)
+        self._entries += [e]
+        return e
 
     def list(self):
-        img = [f for f in os.listdir(os.path.join(self.root_dir, 'img'))
-               if os.path.isfile(os.path.join(self.root_dir, 'img', f))]
-        vid = [f for f in os.listdir(os.path.join(self.root_dir, 'vid'))
-               if os.path.isfile(os.path.join(self.root_dir, 'vid', f))]
-
-        result = [('img', i) for i in img] + [('vid', v) for v in vid]
-        return sorted(result, key=lambda v: v[1])
+        return [e for e in self._entries if e.is_ready()]
 
 

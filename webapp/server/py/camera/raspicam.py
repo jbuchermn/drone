@@ -50,8 +50,8 @@ class RaspiCam:
 
         self._current_video_config = None
         self._current_video_mode = None
-        self._current_video_path = None
         self._current_video_file = None
+        self._current_video_entry = None
 
         self._bitrate = Bitrate('raspicam')
 
@@ -143,20 +143,9 @@ class RaspiCam:
         """
         path = None
         if mode == 'both' or mode == 'file':
-            path = self.gallery.new_video(format=options['format'])
-
-            """
-            Change to .filename during recording
-            """
-            path = os.path.join(
-                os.path.dirname(path),
-                '.' + os.path.basename(path)
-            )
-            self._current_video_path = path
-            self._current_video_file = NonBlockingFile(path, 'wb')
+            self._current_video_entry = self.gallery.new_video(format=options['format'])
+            self._current_video_file = NonBlockingFile(self._current_video_entry.filename(), 'wb')
             self._current_video_file.start()
-        else:
-            self._current_video_path = None
 
         self._current_video_config = options
         self._current_video_mode = mode
@@ -179,17 +168,8 @@ class RaspiCam:
             self._current_video_file.close()
             self._current_video_file = None
 
-        """
-        Videos are stored as .filename at first and after recording
-        is finished moved to filename
-        """
-        if self._current_video_path is not None:
-            path = os.path.join(
-                os.path.dirname(self._current_video_path),
-                os.path.basename(self._current_video_path)[1:]
-            )
-
-            os.rename(self._current_video_path, path)
+        if self._current_video_entry is not None:
+            self._current_video_entry.process()
             self._current_video_path = None
 
     def image(self, **kwargs):
@@ -212,8 +192,9 @@ class RaspiCam:
 
         options_at_call = self._handle_options(options)
 
-        path = self.gallery.new_image(format='jpg')
-        self._camera.capture(path, **options_at_call)
+        entry = self.gallery.new_image(format='jpg')
+        self._camera.capture(entry.filename(), **options_at_call)
+        entry.process()
 
         if resume_mode is not None and resume_config is not None:
             self.start(mode=resume_mode, **resume_config)
