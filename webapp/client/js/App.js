@@ -7,6 +7,7 @@ import Footer, { FooterPlaceHolder } from './Footer';
 
 import Gallery from './Gallery';
 import Camera from './Camera';
+import MAVLink from './MAVLink';
 import Streams from './Streams';
 
 const HEARTBEAT_QUERY = gql`
@@ -22,7 +23,7 @@ export default class App extends React.Component{
     constructor(props){
         super(props);
         this.state = {
-            selectedPage: 1
+            selectedPage: 2
         };
     }
 
@@ -39,7 +40,7 @@ export default class App extends React.Component{
                             <Header connected={connected} />
                             {connected && this.state.selectedPage == 0 && <Camera />}
                             {connected && this.state.selectedPage == 1 && <Gallery />}
-                            {connected && this.state.selectedPage == 2 && <div/>}
+                            {connected && this.state.selectedPage == 2 && <MAVLink/>}
                             {connected && this.state.selectedPage == 3 && <Streams />}
                             {connected && 
                                 <Footer 

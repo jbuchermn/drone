@@ -242,17 +242,17 @@ class CameraInner extends React.Component{
                     </div>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={recordClicked} fullWidth>
+                    <Button variant="contained" color="primary" onClick={recordClicked} fullWidth >
                         {this.props.camera.recording ? "Recording..." : "Record"}
                     </Button>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={_takePicture} fullWidth>
+                    <Button variant="contained" color="primary" onClick={_takePicture} fullWidth >
                         Picture
                     </Button>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={_startStream} fullWidth>
+                    <Button variant="contained" color="primary" onClick={_startStream} fullWidth >
                         Update
                     </Button>
                 </Grid>
