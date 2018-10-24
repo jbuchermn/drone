@@ -1,0 +1,68 @@
+from subprocess import Popen, PIPE
+from threading import Thread
+from queue import Queue
+from itertools import chain
+import time
+import os
+
+from ..util.non_blocking_file import is_file_write_in_progress
+
+
+class ConverterJob:
+    def __init__(self, entry, source_file, target_file, command):
+        self._entry = entry
+        self.source_file = source_file
+        self.target_file = target_file
+        self.command = command
+
+    def run(self):
+        print("Converting %s..." % self.command)
+        p = Popen(self.command.split(" "), stdout=PIPE, stderr=PIPE)
+        stdout, stderr = p.communicate()
+
+        success = (p.returncode == 0) and os.path.isfile(self.target_file)
+
+        if success:
+            print("...done")
+            self._entry.on_job_complete()
+        else:
+            print("...failed:" % self.command.split(" "))
+            print(stderr.decode("utf-8"))
+            raise Exception("Conversion failed")
+
+
+class Converter(Thread):
+    def __init__(self):
+        super().__init__()
+        self._jobs = Queue()
+        self._running = True
+
+        self._corrupt_files = []
+
+    def run(self):
+        while self._running:
+            if is_file_write_in_progress():
+                time.sleep(5)
+                continue
+
+            if self._jobs.empty():
+                time.sleep(1)
+                continue
+
+            job = self._jobs.get()
+            if job.source_file in self._corrupt_files:
+                continue
+
+            try:
+                job.run()
+            except Exception:
+                """
+                Don't run the same conversion indefinitely
+                """
+                self._corrupt_files += [job.source_file]
+
+    def add_job(self, job):
+        self._jobs.put(job)
+
+    def close(self):
+        self._running = False

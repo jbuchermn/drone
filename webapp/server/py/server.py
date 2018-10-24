@@ -14,7 +14,6 @@ from .util.ping import Ping
 class Server:
     def __init__(self):
         self.gallery = Gallery('/home/pi/Camera')
-        self.gallery.observe()
 
         self.cam = RaspiCam(self.gallery, ws_port=8088)
         self.cam.start(mode='stream')
