@@ -2,6 +2,7 @@ import os
 import signal
 import traceback
 from subprocess import Popen, PIPE
+from socket import socket, AF_INET, SOCK_DGRAM
 
 CMAVNODE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              "..", "..", "cpp", "cmavnode", "build", "cmavnode")
@@ -23,10 +24,10 @@ class MAVLinkProxy:
         self.close()
 
     def set_proxy(self, addr):
-        self._addr = addr
-        ip, port = addr.split(":")
         self.close()
+
         with open(CMAVNODE_CONFIG, "w") as config:
+            ip, port = addr.split(":")
             config.write("[master]\n" +
                          "type=serial\n" + 
                          ("port=%s\n" % self._master_port) + 
@@ -35,7 +36,9 @@ class MAVLinkProxy:
                          "type=socket\n" + 
                          ("targetip=%s\n" % ip) + 
                          ("targetport=%s\n" % port))
+
         self._process = Popen((CMAVNODE_PATH + " -f " + CMAVNODE_CONFIG).split(" "))
+        self._addr = addr
 
     def get_proxy(self):
         return self._addr
@@ -50,6 +53,7 @@ class MAVLinkProxy:
             if self._process.poll():
                 self._process.terminate()
             self._process = None
+            self._addr = None
 
 if __name__ == '__main__':
     import time

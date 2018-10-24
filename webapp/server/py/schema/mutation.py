@@ -17,7 +17,8 @@ class Mutation(graphene.ObjectType):
     takeVideo = graphene.Field(CameraGalleryType, stream=graphene.Boolean(),
                                config=graphene.String())
 
-    startMAVLinkProxy = graphene.Field(MAVLinkProxyType, addr=graphene.String())
+    startMAVLinkProxy = graphene.Field(MAVLinkProxyType, addr=graphene.String(required=False))
+    stopMAVLinkProxy = graphene.Field(MAVLinkProxyType)
 
     def resolve_startStream(self, info, config):
         server = info.context['server']
@@ -47,7 +48,15 @@ class Mutation(graphene.ObjectType):
             gallery=GalleryType(server, id="1")
         )
 
-    def resolve_startMAVLinkProxy(self, info, addr):
+    def resolve_startMAVLinkProxy(self, info, addr=None):
         server = info.context['server']
+        if addr is None:
+            addr = server.client_ip + ":14550"
         server.mavlink_proxy.set_proxy(addr)
         return MAVLinkProxyType(server, id="1")
+
+    def resolve_stopMAVLinkProxy(self, info):
+        server = info.context['server']
+        server.mavlink_proxy.close()
+        return MAVLinkProxyType(server, id="1")
+
