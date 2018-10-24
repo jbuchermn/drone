@@ -22,7 +22,7 @@ export default class App extends React.Component{
     constructor(props){
         super(props);
         this.state = {
-            selectedPage: 3
+            selectedPage: 0
         };
     }
 
@@ -37,7 +37,7 @@ export default class App extends React.Component{
                     return (
                         <React.Fragment>
                             <Header connected={connected} />
-                            {connected && this.state.selectedPage == 0 && <Camera width={1280} height={720}/>}
+                            {connected && this.state.selectedPage == 0 && <Camera />}
                             {connected && this.state.selectedPage == 1 && <Gallery />}
                             {connected && this.state.selectedPage == 2 && <div/>}
                             {connected && this.state.selectedPage == 3 && <Streams />}
