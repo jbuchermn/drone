@@ -11,4 +11,3 @@ sudo cp etc_dnsmasq.conf /etc/dnsmasq.conf
 sudo cp etc_systemd_system_autohotspot.service /etc/systemd/system/autohotspot.service
 sudo systemctl enable autohotspot.service
 sudo cp usr_bin_autohotspot /usr/bin/autohotspot
-sudo cp /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.backup

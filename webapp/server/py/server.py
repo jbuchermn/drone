@@ -21,6 +21,11 @@ def shutdown():
     process = Popen(command.split(), stdout=PIPE)
     process.communicate()
 
+def auto_hotspot(force=False):
+    print("Calling /usr/bin/autohotspot %s..." % ("force" if force else ""))
+    command = "/usr/bin/sudo /usr/bin/autohotspot %s" % ("force" if force else "") 
+    process = Popen(command.split(), stdout=PIPE)
+    process.communicate()
 
 class Server:
     def __init__(self):
@@ -62,6 +67,9 @@ class Server:
         self.mavlink_proxy.close()
         if self.client_ping is not None:
             self.client_ping.close()
+
+    def auto_hotspot(self, force):
+        auto_hotspot(force)
 
     def request_shutdown(self):
         self.shutdown_requested = True

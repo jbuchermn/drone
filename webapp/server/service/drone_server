@@ -3,8 +3,8 @@ cd /home/pi/drone/webapp/server
 
 
 # Will only work on fast-forward merges
-echo "Calling git pull..." >> log
-sudo -u pi git pull >> log
+# echo "Calling git pull..." >> log
+# sudo -u pi git pull >> log
 
 echo "Starting server..." >> log
 exec sudo -u pi python3 main.py >> log
