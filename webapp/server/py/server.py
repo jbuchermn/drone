@@ -10,10 +10,11 @@ from flask_graphql import GraphQLView
 
 
 from .schema import schema
-from .camera.gallery import Gallery
-from .camera.raspicam import RaspiCam
+from .gallery.gallery import Gallery
+from .camera import Camera
 from .quad.mavlink_proxy import MAVLinkProxy
 from .util.ping import Ping
+
 
 def shutdown():
     print("Shutting system down...")
@@ -21,17 +22,20 @@ def shutdown():
     process = Popen(command.split(), stdout=PIPE)
     process.communicate()
 
+
 def auto_hotspot(force=False):
     print("Calling /usr/bin/autohotspot %s..." % ("force" if force else ""))
-    command = "/usr/bin/sudo /usr/bin/autohotspot %s" % ("force" if force else "") 
+    command = "/usr/bin/sudo /usr/bin/autohotspot %s" % ("force" if force
+                                                         else "")
     process = Popen(command.split(), stdout=PIPE)
     process.communicate()
+
 
 class Server:
     def __init__(self):
         self.gallery = Gallery('/home/pi/Camera')
 
-        self.cam = RaspiCam(self.gallery, ws_port=8088)
+        self.cam = Camera(self.gallery, ws_port=8088)
         self.cam.start(mode='stream')
 
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
@@ -55,11 +59,10 @@ class Server:
             if self.client_ping.ip != self.client_ip:
                 self.client_ping.close()
                 self.client_ping = None
-    
+
         if self.client_ping is None:
             self.client_ping = Ping(self.client_ip)
             self.client_ping.start()
-
 
     def close(self):
         self.gallery.close()
@@ -73,7 +76,6 @@ class Server:
 
     def request_shutdown(self):
         self.shutdown_requested = True
-
 
 
 class ServerThread(Thread):
@@ -123,7 +125,6 @@ def run(host='0.0.0.0', port=5000):
                              graphiql=True,
                              get_context=get_context))
 
-
         srv = ServerThread(app, host=host, port=port)
         print("Starting webserver up...")
         srv.start()
@@ -135,7 +136,7 @@ def run(host='0.0.0.0', port=5000):
             print("Shutting webserver down...")
             srv.shutdown()
         signal.signal(signal.SIGINT, handle_sigint)
-        
+
         while srv.running:
             time.sleep(1)
             if server.shutdown_requested:

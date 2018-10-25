@@ -4,6 +4,8 @@ import json
 from .gallery import GalleryType
 from .camera import CameraType
 from .mavlink import MAVLinkProxyType
+from ..camera import StreamingMode
+from ..camera import CameraConfig
 
 
 class CameraGalleryType(graphene.ObjectType):
@@ -17,7 +19,8 @@ class Mutation(graphene.ObjectType):
     takeVideo = graphene.Field(CameraGalleryType, stream=graphene.Boolean(),
                                config=graphene.String())
 
-    startMAVLinkProxy = graphene.Field(MAVLinkProxyType, addr=graphene.String(required=False))
+    startMAVLinkProxy = graphene.Field(MAVLinkProxyType,
+                                       addr=graphene.String(required=False))
     stopMAVLinkProxy = graphene.Field(MAVLinkProxyType)
 
     autoHotspot = graphene.Field(graphene.Int, config=graphene.String())
@@ -26,7 +29,7 @@ class Mutation(graphene.ObjectType):
     def resolve_startStream(self, info, config):
         server = info.context['server']
         config = json.loads(config)
-        server.cam.start(mode='stream', **config)
+        server.cam.start(StreamingMode.STREAM, CameraConfig(config))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
@@ -35,7 +38,7 @@ class Mutation(graphene.ObjectType):
     def resolve_takePicture(self, info, config):
         server = info.context['server']
         config = json.loads(config)
-        server.cam.image(**config)
+        server.cam.image(CameraConfig(config))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
@@ -44,8 +47,8 @@ class Mutation(graphene.ObjectType):
     def resolve_takeVideo(self, info, stream, config):
         server = info.context['server']
         config = json.loads(config)
-        mode = 'both' if stream else 'file'
-        server.cam.start(mode=mode, **config)
+        mode = StreamingMode.BOTH if stream else StreamingMode.FILE
+        server.cam.start(mode, CameraConfig(config))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
@@ -70,5 +73,5 @@ class Mutation(graphene.ObjectType):
 
     def resolve_autoHotspot(self, info, config):
         server = info.context['server']
-        server.auto_hotspot(force = (config=="force"))
+        server.auto_hotspot(force=(config == "force"))
         return 0

@@ -1,6 +1,8 @@
 import graphene
 import json
 
+from ..camera import StreamingMode
+
 
 class CameraType(graphene.ObjectType):
     def __init__(self, server, **kwargs):
@@ -13,12 +15,12 @@ class CameraType(graphene.ObjectType):
     recording = graphene.Boolean()
 
     def resolve_config(self, info):
-        config = self._server.cam.current_config()
+        config = self._server.cam.get_current_config()
         return json.dumps(config)
 
     def resolve_ws_port(self, info):
-        return self._server.cam.get_ws_port()
+        return self._server.cam.ws_port
 
     def resolve_recording(self, info):
-        return self._server.cam.is_recording()
-
+        return self._server.cam.get_current_streaming_mode in \
+            [StreamingMode.FILE, StreamingMode.BOTH]
