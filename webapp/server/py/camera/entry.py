@@ -10,8 +10,8 @@ _containers = {
 }
 
 _thumbnails = {
-    'mp4': ['jpg', 'ffmpeg -y -i %s -vf thumbnail,scale=-1:240 -frames:v 1 %s'],
-    'avi': ['jpg', 'ffmpeg -y -i %s -vf thumbnail,scale=-1:240 -frames:v 1 %s'],
+    'mp4': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\,0),scale=-1:240 -v:frames 1 %s'],
+    'avi': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\,0),scale=-1:240 -v:frames 1 %s'],
     'jpg': ['jpg', 'convert -thumbnail x240 %s %s'],
 }
 

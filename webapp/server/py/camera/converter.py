@@ -23,12 +23,9 @@ class ConverterJob:
         success = (p.returncode == 0) and os.path.isfile(self.target_file)
 
         if success:
-            print("...done")
             self._entry.on_job_complete()
         else:
-            print("...failed:" % self.command.split(" "))
-            print(stderr.decode("utf-8"))
-            raise Exception("Conversion failed")
+            raise Exception("Conversion failed: %s" % stderr.decode("utf-8"))
 
 
 class Converter(Thread):
@@ -55,10 +52,12 @@ class Converter(Thread):
 
             try:
                 job.run()
-            except Exception:
+                print("...done")
+            except Exception as err:
                 """
                 Don't run the same conversion indefinitely
                 """
+                print("...failed:\n%s" % err)
                 self._corrupt_files += [job.source_file]
 
     def add_job(self, job):
