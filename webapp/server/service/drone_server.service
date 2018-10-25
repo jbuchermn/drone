@@ -2,7 +2,7 @@
 Description=Drone server
 
 [Service]
-ExecStart=/bin/sh /home/pi/drone/webapp/server/server
+ExecStart=/bin/sh /home/pi/drone/webapp/server/service/drone_server
 KillSignal=SIGINT
 
 [Install]
