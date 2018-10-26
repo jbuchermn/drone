@@ -1,6 +1,4 @@
 import os
-import time
-from threading import Thread
 
 from .converter import Converter
 from .entry import Entry
@@ -16,7 +14,7 @@ class Gallery:
 
         self._converter = Converter()
         self._converter.start()
-        
+
         self._entries = list(self._load_entries())
         """
         See if there is some post-processing left
@@ -25,12 +23,10 @@ class Gallery:
             e.process()
 
     def _load_entries(self):
-        kind_name = set()
         for kind in ['img', 'vid']:
             for n in os.listdir(os.path.join(self.root_dir, kind)):
                 f = os.path.join(self.root_dir, kind, n)
                 yield Entry(self, kind, new=False, filename=f)
-
 
     def add_job(self, job):
         self._converter.add_job(job)

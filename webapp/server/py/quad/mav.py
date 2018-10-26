@@ -5,6 +5,11 @@ from queue import Queue
 from pymavlink import mavutil
 
 
+"""
+Not used at the moment
+"""
+
+
 class MAVLinkConnectionSender(Thread):
     def __init__(self, conn, max_hz):
         super().__init__()

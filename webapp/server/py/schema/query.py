@@ -5,7 +5,7 @@ from .gallery import GalleryType
 from .mavlink import MAVLinkProxyType
 from .stream import StreamType
 
-from ..util.stream import get_streams
+from ..util import get_streams
 
 
 class Query(graphene.ObjectType):

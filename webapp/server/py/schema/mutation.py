@@ -4,8 +4,7 @@ import json
 from .gallery import GalleryType
 from .camera import CameraType
 from .mavlink import MAVLinkProxyType
-from ..camera import StreamingMode
-from ..camera import CameraConfig
+from ..camera import StreamingMode, CameraConfig
 
 
 class CameraGalleryType(graphene.ObjectType):
@@ -15,7 +14,8 @@ class CameraGalleryType(graphene.ObjectType):
 
 class Mutation(graphene.ObjectType):
     startStream = graphene.Field(CameraGalleryType, config=graphene.String())
-    takePicture = graphene.Field(CameraGalleryType, config=graphene.String())
+    takePicture = graphene.Field(CameraGalleryType, config=graphene.String(),
+                                 streamConfig=graphene.String())
     takeVideo = graphene.Field(CameraGalleryType, stream=graphene.Boolean(),
                                config=graphene.String())
 
@@ -35,10 +35,11 @@ class Mutation(graphene.ObjectType):
             gallery=GalleryType(server, id="1")
         )
 
-    def resolve_takePicture(self, info, config):
+    def resolve_takePicture(self, info, config, streamConfig):
         server = info.context['server']
         config = json.loads(config)
         server.cam.image(CameraConfig(config))
+        server.cam.start(StreamingMode.STREAM, CameraConfig(streamConfig))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")

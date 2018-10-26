@@ -2,6 +2,7 @@ import time
 
 _streams = {}
 
+
 class Stream:
     def __init__(self, name, keep=600):
         self.name = name
@@ -20,7 +21,8 @@ class Stream:
             del self.t[0]
             del self.val[0]
 
+
 def get_streams():
     for k in _streams:
         _streams[k].clean()
-    return {k:_streams[k] for k in _streams if len(_streams[k].t)>0}
+    return {k: _streams[k] for k in _streams if len(_streams[k].t) > 0}

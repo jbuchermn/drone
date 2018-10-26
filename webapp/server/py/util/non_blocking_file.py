@@ -1,3 +1,4 @@
+import traceback
 from threading import Thread
 from queue import Queue
 from .bitrate import Bitrate

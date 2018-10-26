@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE
 
 from .stream import Stream
 
+
 class Ping(Thread):
     def __init__(self, ip):
         super().__init__()
@@ -29,7 +30,7 @@ class Ping(Thread):
             try:
                 stdout = stdout.split("\n")[-1]
                 stdout = stdout.split("=")[1]
-                stdout = stdout.split("/")[2]  # 0: min, 1: avg, 2: max, 3: mdev
+                stdout = stdout.split("/")[2]  # 0: min, avg, max, mdev
                 self._stream.register(float(stdout))
             except Exception:
                 self._stream.register(-1)

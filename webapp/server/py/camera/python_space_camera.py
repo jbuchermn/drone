@@ -1,9 +1,7 @@
 from abc import abstractmethod
 
 from .camera import Camera
-from ..util.bitrate import Bitrate
-from ..util.ws_broadcast import WSBroadcast
-from ..util.non_blocking_file import NonBlockingFile
+from ..util import Bitrate, WSBroadcast, NonBlockingFile
 
 
 _sep = {

@@ -23,7 +23,8 @@ class GalleryEntryType(graphene.ObjectType):
         return os.path.relpath(self._entry.filename(), self._gallery.root_dir)
 
     def resolve_thumbnail_path(self, info):
-        return os.path.relpath(self._entry.thumbnail['path'], self._gallery.root_dir)
+        return os.path.relpath(self._entry.thumbnail['path'],
+                               self._gallery.root_dir)
 
     def resolve_thumbnail_width(self, info):
         return self._entry.thumbnail['width']

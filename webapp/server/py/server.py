@@ -10,10 +10,10 @@ from flask_graphql import GraphQLView
 
 
 from .schema import schema
-from .gallery.gallery import Gallery
+from .gallery import Gallery
 from .camera import Camera
-from .quad.mavlink_proxy import MAVLinkProxy
-from .util.ping import Ping
+from .quad import MAVLinkProxy
+from .util import Ping
 
 
 def shutdown():

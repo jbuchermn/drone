@@ -1,11 +1,10 @@
 from subprocess import Popen, PIPE
 from threading import Thread
 from queue import Queue
-from itertools import chain
 import time
 import os
 
-from ..util.non_blocking_file import is_file_write_in_progress
+from ..util import is_file_write_in_progress
 
 
 class ConverterJob:

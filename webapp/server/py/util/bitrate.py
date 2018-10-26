@@ -1,6 +1,7 @@
 import time
 from .stream import Stream
 
+
 class Bitrate:
     def __init__(self, name):
         self._name = name

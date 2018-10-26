@@ -10,10 +10,11 @@ _containers = {
 }
 
 _thumbnails = {
-    'mp4': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\,0),scale=-1:240 -v:frames 1 %s'],
-    'avi': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\,0),scale=-1:240 -v:frames 1 %s'],
+    'mp4': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    'avi': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
     'jpg': ['jpg', 'convert -thumbnail x240 %s %s'],
 }
+
 
 class Entry:
     def __init__(self, gallery, kind, new=False, format=None, filename=None):
@@ -31,7 +32,8 @@ class Entry:
             self.name = os.path.basename(filename)[:-len(self.format)-1]
 
         self.thumbnail = {
-            'path': os.path.join(self._gallery.root_dir, 'thumbnail', self.name + '.jpg'),
+            'path': os.path.join(self._gallery.root_dir, 'thumbnail',
+                                 self.name + '.jpg'),
             'found': False,
             'width': None,
             'height': None
@@ -47,8 +49,8 @@ class Entry:
         """
         Getter
         """
-        return os.path.join(self._gallery.root_dir, self.kind, self.name + '.' + self.format)
-
+        return os.path.join(self._gallery.root_dir, self.kind,
+                            self.name + '.' + self.format)
 
     def _find_thumbnail(self):
         if os.path.isfile(self.thumbnail['path']):
@@ -62,7 +64,8 @@ class Entry:
         """
         Is post-processing done?
         """
-        return self.format not in _containers.keys() and self.thumbnail['found']
+        return self.format not in _containers.keys() and \
+            self.thumbnail['found']
 
     def process(self):
         """
@@ -75,18 +78,22 @@ class Entry:
             ext, cmd = _containers[self.format]
             target = os.path.join('/tmp', self.name + '.' + ext)
             cmd = cmd % (self.filename(), target)
-            self._gallery.add_job(ConverterJob(self, self.filename(), target, cmd))
+            self._gallery.add_job(ConverterJob(self, self.filename(),
+                                               target, cmd))
 
             self._container_target = target
 
         elif not self.thumbnail['found']:
             ext, cmd = _thumbnails[self.format]
             cmd = cmd % (self.filename(), self.thumbnail['path'])
-            self._gallery.add_job(ConverterJob(self, self.filename(), self.thumbnail['path'], cmd))
+            self._gallery.add_job(ConverterJob(self, self.filename(),
+                                               self.thumbnail['path'], cmd))
 
     def on_job_complete(self):
-        if self._container_target is not None and os.path.isfile(self._container_target):
-            os.rename(self.filename(), os.path.join(self._gallery.root_dir, 'backup', self.name + self.format))
+        if self._container_target is not None and \
+                os.path.isfile(self._container_target):
+            os.rename(self.filename(), os.path.join(
+                self._gallery.root_dir, 'backup', self.name + self.format))
             self.format = _containers[self.format][0]
             os.rename(self._container_target, self.filename())
             self._container_target = None
