@@ -200,7 +200,8 @@ class CameraInner extends React.Component{
         const _takePicture = () => {
             this.props.takePicture({
                 variables: {
-                    config: this.state.pictureConfig
+                    config: this.state.pictureConfig,
+                    streamConfig: this.state.streamConfig
                 }
             });
         };

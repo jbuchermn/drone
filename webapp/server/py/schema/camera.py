@@ -13,6 +13,7 @@ class CameraType(graphene.ObjectType):
     config = graphene.String()
     ws_port = graphene.Int()
     recording = graphene.Boolean()
+    streaming = graphene.Boolean()
 
     def resolve_config(self, info):
         config = self._server.cam.get_current_config()
@@ -22,5 +23,9 @@ class CameraType(graphene.ObjectType):
         return self._server.cam.ws_port
 
     def resolve_recording(self, info):
-        return self._server.cam.get_current_streaming_mode in \
+        return self._server.cam.get_current_streaming_mode() in \
             [StreamingMode.FILE, StreamingMode.BOTH]
+
+    def resolve_streaming(self, info):
+        return self._server.cam.get_current_streaming_mode() in \
+            [StreamingMode.STREAM, StreamingMode.BOTH]

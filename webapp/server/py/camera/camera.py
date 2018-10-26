@@ -4,17 +4,41 @@ from enum import Enum
 
 
 class StreamingMode(Enum):
-    STREAM = 1,  # Stream to websocket
-    FILE = 2,  # Save to file
-    BOTH = 3  # Simultaneous streaming and storing
+    """
+    Stream to websocket
+    """
+    STREAM = 1,
+
+    """
+    Save to file
+    """
+    FILE = 2,
+
+    """
+    Save while streaming to websocket
+    """
+    BOTH = 3
 
 
 class CameraConfig:
     def __init__(self, format=None, **kwargs):
         if format is None:
             raise Exception("Need to specify format")
+
         self.format = format
         self.options = kwargs
+
+    def get_dict(self):
+        return {
+            'format': self.format,
+            **self.options
+        }
+
+    def set(self, key, val):
+        if key == 'format':
+            self.format = val
+        else:
+            self.options[key] = val
 
 
 class Camera:
@@ -49,6 +73,9 @@ class Camera:
 
         config: Instance of CameraConfig
         path: Where to store the image
+
+        _stop is guaranteed to be called beforehand if streaming/saving
+        was in progress
         """
         pass
 
@@ -59,8 +86,14 @@ class Camera:
 
         mode: Instance of StreamingMode
         config: Instance of CameraConfig
-
         path: where to store if mode == FILE or mode == BOTH
+
+        This method should alter the CameraConfig instance
+        to inform the caller about defaults or unsupported
+        configuration
+
+        _stop is guaranteed to be called beforehand if streaming/saving
+        was in progress
         """
         pass
 
@@ -89,6 +122,9 @@ class Camera:
             traceback.print_exception(exc_type, exc_value, tb)
         self.close()
 
+    def close(self):
+        self._close()
+
     def image(self, config):
         if self._cur_config is not None:
             self.stop()
@@ -109,7 +145,7 @@ class Camera:
             self._cur_entry = self.gallery.new_video(format=config.format)
             path = self._cur_entry.filename()
 
-        self._start(mode, config, path=path)
+        self._start(mode, self._cur_config, path=path)
 
     def stop(self):
         self._stop()
@@ -124,6 +160,3 @@ class Camera:
 
     def get_current_config(self):
         return self._cur_config
-
-    def close(self):
-        self._close()
