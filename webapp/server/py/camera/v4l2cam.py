@@ -26,7 +26,8 @@ from .v4l2 import (
     VIDIOC_S_PARM,
     V4L2_BUF_TYPE_VIDEO_CAPTURE,
     V4L2_MEMORY_MMAP,
-    V4L2_CAP_TIMEPERFRAME
+    V4L2_CAP_TIMEPERFRAME,
+    V4L2_PIX_FMT_MJPEG,
 )
 
 
@@ -34,10 +35,40 @@ def _ubyte_to_str(arr):
     return "".join([chr(c) for c in arr])
 
 
-class _Config:
-    def __init__(self, fd):
-        self._fd = fd
+class _FPSLimit:
+    def __init__(self, fps, on_frame):
+        self._tpf = 1./fps
+        self._on_frame = on_frame
+        self._last = 0
 
+    def on_frame(self, frame):
+        ts = time.time()
+        if ts > self._last + self._tpf:
+            self._on_frame(frame)
+            self._last = ts
+
+
+class _Stream(Thread):
+    def __init__(self, device, config, on_frame, num_buffers=2):
+        super().__init__()
+        self._fd = open("/dev/video1", "rb+", buffering=0)
+        self._on_frame = on_frame
+        self._running = True
+
+        """
+        Print info
+        """
+        self._cp = v4l2_capability()
+        ioctl(self._fd, VIDIOC_QUERYCAP, self._cp)
+
+        print("Opened v4l2 device '%s':" % self._fd.name)
+        print("\tDriver:  %s" % _ubyte_to_str(self._cp.driver))
+        print("\tCard:    %s" % _ubyte_to_str(self._cp.card))
+        print("\tBusinfo: %s" % _ubyte_to_str(self._cp.bus_info))
+
+        """
+        Handle configuration
+        """
         fmt = v4l2_format()
         fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
         ioctl(self._fd, VIDIOC_G_FMT, fmt)
@@ -47,7 +78,31 @@ class _Config:
         parm.parm.capture.capability = V4L2_CAP_TIMEPERFRAME
         ioctl(self._fd, VIDIOC_G_PARM, parm)
 
-        print("Current video config:")
+        if config.format != 'mjpeg':
+            raise Exception("Unsupported format: %s" % config.format)
+        fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG
+
+        if 'resolution' in config.options:
+            fmt.fmt.pix.width, fmt.fmt.pix.height = \
+                config.options['resolution']
+
+        if 'framerate' in config.options:
+            parm.parm.capture.timeperframe.numerator = 1
+            parm.parm.capture.timeperframe.denominator = \
+                config.options['framerate']
+
+            """
+            Framerate setting might pick highest possible rate
+            """
+            fps = _FPSLimit(config.options['framerate'], self._on_frame)
+            self._on_frame = fps.on_frame
+
+        ioctl(self._fd, VIDIOC_S_FMT, fmt)
+        ioctl(self._fd, VIDIOC_S_PARM, parm)
+        ioctl(self._fd, VIDIOC_G_FMT, fmt)
+        ioctl(self._fd, VIDIOC_G_PARM, parm)
+
+        print("Video config:")
         print("\tresolution: %d/%d" % (fmt.fmt.pix.width, fmt.fmt.pix.height))
         print("\tformat:     %s" % v4l2_fourcc_to_str(fmt.fmt.pix.pixelformat))
         print("\tsizeimage:  %d" % fmt.fmt.pix.sizeimage)
@@ -55,24 +110,13 @@ class _Config:
               (parm.parm.capture.timeperframe.denominator /
                parm.parm.capture.timeperframe.numerator))
 
-        fmt.fmt.pix.width = 640
-        fmt.fmt.pix.height = 480
-        ioctl(self._fd, VIDIOC_S_FMT, fmt)
-
-        # possibly set fps is larger than this value
-        parm.parm.capture.timeperframe.numerator = 1
-        parm.parm.capture.timeperframe.denominator = 10
-        ioctl(self._fd, VIDIOC_S_PARM, parm)
-
-
-class _Buffers:
-    def __init__(self, fd, count):
-        self._fd = fd
-
+        """
+        Allocate buffers
+        """
         req = v4l2_requestbuffers()
         req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
         req.memory = V4L2_MEMORY_MMAP
-        req.count = count
+        req.count = num_buffers
         ioctl(self._fd, VIDIOC_REQBUFS, req)
 
         self._buffers = []
@@ -92,62 +136,46 @@ class _Buffers:
             ioctl(self._fd, VIDIOC_QBUF, buf)
             self._buffers.append(mm)
 
-    def get_data(self, index):
-        return self._buffers[index]
-
-
-class _Capture(Thread):
-    def __init__(self, fd, buffers, on_frame):
-        super().__init__()
-        self._running = True
-        self._fd = fd
-        self._buffers = buffers
-        self._on_frame = on_frame
-        self._finished = False
-
-    def stop(self):
-        self._running = False
-
-    def is_finished(self):
-        return self._finished
-
     def run(self):
+        """
+        Start stream
+        """
+        ioctl(self._fd, VIDIOC_STREAMON,
+              v4l2_buf_type(V4L2_BUF_TYPE_VIDEO_CAPTURE))
+        select.select([self._fd], [], [])
+
+        """
+        Main loop
+        """
         while self._running:
             buf = v4l2_buffer()
             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
             buf.memory = V4L2_MEMORY_MMAP
 
             ioctl(self._fd, VIDIOC_DQBUF, buf)
-            self._on_frame(self._buffers.get_data(buf.index))
+            self._on_frame(self._buffers[buf.index])
             ioctl(self._fd, VIDIOC_QBUF, buf)
-        self._finished = True
+
+        """
+        Stop stream
+        """
+        ioctl(self._fd, VIDIOC_STREAMOFF,
+              v4l2_buf_type(V4L2_BUF_TYPE_VIDEO_CAPTURE))
+
+        """
+        Clean up
+        """
+        self._fd.close()
+        print("...closed")
+
+    def stop(self):
+        self._running = False
 
 
 class V4L2Cam(PythonSpaceCamera):
     def __init__(self, gallery, ws_port):
         super().__init__(gallery, ws_port)
-
-        self._fd = open("/dev/video1", "rb+", buffering=0)
-        self._cp = v4l2_capability()
-        ioctl(self._fd, VIDIOC_QUERYCAP, self._cp)
-
-        print("Opened v4l2 device '%s':" % self._fd.name)
-        print("\tDriver:  %s" % _ubyte_to_str(self._cp.driver))
-        print("\tCard:    %s" % _ubyte_to_str(self._cp.card))
-        print("\tBusinfo: %s" % _ubyte_to_str(self._cp.bus_info))
-
-        self._config = _Config(self._fd)
-        self._buffers = _Buffers(self._fd, 3)
-        self._capture = None
-
-    def _streamon(self):
-        ioctl(self._fd, VIDIOC_STREAMON,
-              v4l2_buf_type(V4L2_BUF_TYPE_VIDEO_CAPTURE))
-        select.select([self._fd], [], [])
-
-    def _streamoff(self):
-        ioctl(self._fd, VIDIOC_STREAMOFF,
-              v4l2_buf_type(V4L2_BUF_TYPE_VIDEO_CAPTURE))
+        self._stream = None
 
     """
     PythonSpaceCamera API
@@ -156,23 +184,13 @@ class V4L2Cam(PythonSpaceCamera):
         raise Exception("Unsupported atm")
 
     def _py_start(self, config):
-        self._streamon()
-        self._capture = _Capture(self._fd, self._buffers, self._on_frame)
-        self._capture.start()
+        self._stream = _Stream("/dev/video1", config, self._on_frame)
+        self._stream.start()
 
     def _py_stop(self):
-        if self._capture is not None:
-            self._capture.stop()
-
-        """
-        Not waiting for capture will cause DQBUF
-        to throw an exception
-        """
-        while not self._capture.is_finished():
-            time.sleep(0.02)
-
-        self._streamoff()
+        if self._stream is not None:
+            self._stream.stop()
+            self._stream.join()
 
     def _py_close(self):
         self._py_stop()
-        self._fd.close()
