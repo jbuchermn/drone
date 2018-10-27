@@ -34,7 +34,8 @@ def auto_hotspot(force=False):
 
 class Server:
     def __init__(self):
-        self.gallery = Gallery('/home/pi/Camera')
+        # self.gallery = Gallery('/home/pi/Camera')
+        self.gallery = Gallery('/home/jonas/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
         self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(

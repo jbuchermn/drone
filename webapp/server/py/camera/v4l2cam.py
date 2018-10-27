@@ -49,9 +49,9 @@ class _FPSLimit:
 
 
 class _Stream(Thread):
-    def __init__(self, device, config, on_frame, num_buffers=2):
+    def __init__(self, fd, config, on_frame, num_buffers=2):
         super().__init__()
-        self._fd = open("/dev/video1", "rb+", buffering=0)
+        self._fd = fd
         self._on_frame = on_frame
         self._running = True
 
@@ -162,12 +162,6 @@ class _Stream(Thread):
         ioctl(self._fd, VIDIOC_STREAMOFF,
               v4l2_buf_type(V4L2_BUF_TYPE_VIDEO_CAPTURE))
 
-        """
-        Clean up
-        """
-        self._fd.close()
-        print("...closed")
-
     def stop(self):
         self._running = False
 
@@ -175,6 +169,7 @@ class _Stream(Thread):
 class V4L2Cam(PythonSpaceCamera):
     def __init__(self, gallery, ws_port):
         super().__init__(gallery, ws_port)
+        self._fd = None
         self._stream = None
 
     """
@@ -184,13 +179,18 @@ class V4L2Cam(PythonSpaceCamera):
         raise Exception("Unsupported atm")
 
     def _py_start(self, config):
-        self._stream = _Stream("/dev/video1", config, self._on_frame)
+        self._fd = open("/dev/video1", "rb+", buffering=0)
+        self._stream = _Stream(self._fd, config, self._on_frame)
         self._stream.start()
 
     def _py_stop(self):
         if self._stream is not None:
             self._stream.stop()
             self._stream.join()
+            self._fd.close()
+
+            self._stream = None
+            self._fd = None
 
     def _py_close(self):
         self._py_stop()
