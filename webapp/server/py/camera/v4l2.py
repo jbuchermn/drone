@@ -139,7 +139,7 @@ VID_TYPE_OVERLAY = 8
 VID_TYPE_CHROMAKEY = 16
 VID_TYPE_CLIPPING = 32
 VID_TYPE_FRAMERAM = 64
-VID_TYPE_SCALES	= 128
+VID_TYPE_SCALES = 128
 VID_TYPE_MONOCHROME = 256
 VID_TYPE_SUBCAPTURE = 512
 VID_TYPE_MPEG_DECODER = 1024
@@ -150,6 +150,15 @@ VID_TYPE_MJPEG_ENCODER = 8192
 
 def v4l2_fourcc(a, b, c, d):
     return ord(a) | (ord(b) << 8) | (ord(c) << 16) | (ord(d) << 24)
+
+
+def v4l2_fourcc_to_str(four_cc):
+    tmp = int(four_cc)
+    arr = []
+    for _ in range(4):
+        arr += [chr(tmp % 256)]
+        tmp = int(tmp/256)
+    return "".join(arr)
 
 
 v4l2_field = enum
