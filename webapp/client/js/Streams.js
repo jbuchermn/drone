@@ -48,7 +48,7 @@ export default props =>
             if (error) return <p>Error</p>;
 
             let cameraStreams = data.streams.filter(s => 
-                s.name.includes("raspicam") || s.name.includes("file") || s.name.includes("websocket"));
+                s.name.includes("Camera") || s.name.includes("File") || s.name.includes("Websocket"));
             let otherStreams = data.streams.filter(s => !cameraStreams.includes(s));
 
             cameraStreams = cameraStreams.sort((a, b) => a.name.localeCompare(b.name));
@@ -56,7 +56,7 @@ export default props =>
 
             return (
                 <React.Fragment>
-                    <Plot streams={cameraStreams} />
+                    {cameraStreams.length > 0 && <Plot streams={cameraStreams} />}
                     {otherStreams.map(s =>
                         <Plot streams={[s]} key={s.name}/>)}
                 </React.Fragment>

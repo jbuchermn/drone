@@ -49,7 +49,7 @@ export default class Header extends React.Component{
                         Quadcopter: {this.props.connected ? "Connected" : "Waiting..."}
                     </Typography>
                     <Mutation mutation={AUTOHOTSPOT_MUTATION}>
-                        {(shutdown) => {
+                        {(autoHotspot) => {
                             if(this.props.connected){
                                 const handleAutoHotspot = () => {
                                     autoHotspot({ variables: { config: this.state.autoHotspotConfig } });

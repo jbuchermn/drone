@@ -47,8 +47,8 @@ mutation TakeVideo($config: String!, $stream: Boolean!){
 `
 
 const TAKE_PICTURE_MUTATION = gql`
-mutation TakePicture($config: String!){ 
-    takePicture(config: $config){
+mutation TakePicture($config: String!, $streamConfig: String!){ 
+    takePicture(config: $config, streamConfig: $streamConfig){
         camera{
             id,
             recording,
@@ -185,7 +185,9 @@ class CameraInner extends React.Component{
                 quality: 10,
                 framerate: 24
             }),
-            pictureConfig: JSON.stringify({}),
+            pictureConfig: JSON.stringify({
+                format: "jpeg"
+            }),
             streamConfig: null
         };
     }
