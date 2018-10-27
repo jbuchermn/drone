@@ -7,11 +7,12 @@ import signal
 from werkzeug.serving import make_server
 from flask import Flask, render_template, send_from_directory, request
 from flask_graphql import GraphQLView
+import logging
 
 
 from .schema import schema
 from .gallery import Gallery
-from .camera import Camera
+from .camera import Camera, CameraConfig
 from .quad import MAVLinkProxy
 from .util import Ping
 
@@ -36,7 +37,12 @@ class Server:
         self.gallery = Gallery('/home/pi/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
-        self.cam.start(mode='stream')
+        self.cam.start(mode='stream', config=CameraConfig(
+            format='mjpeg',
+            resolution=(640, 480),
+            framerate=10,
+            bitrate=5000000
+        ))
 
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
 
@@ -97,6 +103,8 @@ class ServerThread(Thread):
 
 
 def run(host='0.0.0.0', port=5000):
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
     shutdown_after_finish = False
 
     with Server() as server:
@@ -135,6 +143,7 @@ def run(host='0.0.0.0', port=5000):
         def handle_sigint(sig, frame):
             print("Shutting webserver down...")
             srv.shutdown()
+            print("...done")
         signal.signal(signal.SIGINT, handle_sigint)
 
         while srv.running:

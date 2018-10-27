@@ -17,7 +17,7 @@ class CameraType(graphene.ObjectType):
 
     def resolve_config(self, info):
         config = self._server.cam.get_current_config()
-        return json.dumps(config)
+        return json.dumps(None if config is None else config.get_dict())
 
     def resolve_ws_port(self, info):
         return self._server.cam.ws_port

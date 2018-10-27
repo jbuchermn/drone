@@ -99,5 +99,8 @@ class PythonSpaceCamera(Camera):
             self._cur_file = None
 
     def _close(self):
-        if self.cur_file is not None:
+        self._ws_broadcast.stop()
+        if self._cur_file is not None:
             self._cur_file.close()
+
+        self.__close()
