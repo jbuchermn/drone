@@ -38,6 +38,7 @@ class Mutation(graphene.ObjectType):
     def resolve_takePicture(self, info, config, streamConfig):
         server = info.context['server']
         config = json.loads(config)
+        streamConfig = json.loads(streamConfig)
         server.cam.image(CameraConfig(**config))
         server.cam.start(StreamingMode.STREAM, CameraConfig(**streamConfig))
         return CameraGalleryType(

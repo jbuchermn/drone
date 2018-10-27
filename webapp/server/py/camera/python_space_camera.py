@@ -82,7 +82,7 @@ class PythonSpaceCamera(Camera):
     Camera API
     """
     def _image(self, config, path):
-        self._py_image(self, config, path)
+        self._py_image(config, path)
 
     def _start(self, mode, config, path=None):
         if path is not None:
