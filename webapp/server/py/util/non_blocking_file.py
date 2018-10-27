@@ -13,7 +13,7 @@ class NonBlockingFile(Thread):
 
         super().__init__()
         self._file = open(filename, mode)
-        self._bitrate = Bitrate('file: %s' % filename)
+        self._bitrate = Bitrate('File: %s' % filename)
         self._running = True
         self._queue = Queue()
 

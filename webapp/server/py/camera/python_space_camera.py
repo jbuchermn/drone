@@ -51,28 +51,28 @@ class PythonSpaceCamera(Camera):
             self._cur_file.write(frame)
 
     @abstractmethod
-    def __image(self, config, path):
+    def _py_image(self, config, path):
         """
         Same as _image
         """
         pass
 
     @abstractmethod
-    def __start(self, config):
+    def _py_start(self, config):
         """
         Start capturing stream calling either _on_frame or _on_buffer
         """
         pass
 
     @abstractmethod
-    def __stop(self):
+    def _py_stop(self):
         """
         Stop capturing
         """
         pass
 
     @abstractmethod
-    def __close(self):
+    def _py_close(self):
         """
         Same as _close
         """
@@ -82,17 +82,17 @@ class PythonSpaceCamera(Camera):
     Camera API
     """
     def _image(self, config, path):
-        self.__image(self, config, path)
+        self._py_image(config, path)
 
     def _start(self, mode, config, path=None):
         if path is not None:
             self._cur_file = NonBlockingFile(path, 'wb')
             self._cur_file.start()
 
-        self.__start(config)
+        self._py_start(config)
 
     def _stop(self):
-        self.__stop()
+        self._py_stop()
 
         if self._cur_file is not None:
             self._cur_file.close()
@@ -103,4 +103,4 @@ class PythonSpaceCamera(Camera):
         if self._cur_file is not None:
             self._cur_file.close()
 
-        self.__close()
+        self._py_close()

@@ -10,9 +10,9 @@ _containers = {
 }
 
 _thumbnails = {
-    'mp4': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
-    'avi': ['jpg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
-    'jpg': ['jpg', 'convert -thumbnail x240 %s %s'],
+    'mp4': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    'avi': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    'jpeg': ['jpeg', 'convert -thumbnail x240 %s %s'],
 }
 
 

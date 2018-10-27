@@ -26,7 +26,7 @@ class WSBroadcast(Thread):
         for c in self._server.connections:
             if len(self._server.connections[c].sendq) <= 1:
                 if c not in self._bitrates:
-                    self._bitrates[c] = Bitrate('websocket: %s' % c)
+                    self._bitrates[c] = Bitrate('Websocket: %s' % c)
 
                 self._bitrates[c].register(len(msg))
                 self._server.connections[c].sendMessage(msg)
