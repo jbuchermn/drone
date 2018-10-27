@@ -10,7 +10,7 @@ class Ping(Thread):
         super().__init__()
         self.ip = ip
         self._running = True
-        self._stream = Stream('ping: %s (ms)' % self.ip)
+        self._stream = Stream('Ping: %s (ms)' % self.ip)
 
     def __enter__(self):
         return self

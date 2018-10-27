@@ -27,10 +27,6 @@ _kwargs = [
 ]
 
 
-def _patch_with_default(options, defaults):
-    for d in defaults:
-        options[d] = options.get(d, defaults[d])
-
 
 class RaspiCam(PythonSpaceCamera):
     def __init__(self, gallery, ws_port):
@@ -52,11 +48,11 @@ class RaspiCam(PythonSpaceCamera):
             """
             Update config to let the caller know about defaults
             """
-            config.set(v, prop.fget(self._camera))
+            # config.set(v, prop.fget(self._camera))
 
         return {v: kw[v] for v in kw if v not in _props}
 
-    def __start(self, config):
+    def _py_start(self, config):
         class _:
             def __init__(self, parent):
                 self.parent = parent
@@ -67,15 +63,15 @@ class RaspiCam(PythonSpaceCamera):
         kwargs = self._handle_config(config)
         self._camera.start_recording(_(self), **kwargs)
 
-    def __stop(self):
+    def _py_stop(self):
         try:
             self._camera.stop_recording()  # Throws PiCameraNotRecording
         except Exception:
             pass
 
-    def __image(self, config, path):
+    def _py_image(self, config, path):
         kwargs = self._handle_config(config)
         self._camera.capture(path, **kwargs)
 
-    def __close(self):
+    def _py_close(self):
         self._camera.close()

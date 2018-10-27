@@ -29,7 +29,7 @@ class Mutation(graphene.ObjectType):
     def resolve_startStream(self, info, config):
         server = info.context['server']
         config = json.loads(config)
-        server.cam.start(StreamingMode.STREAM, CameraConfig(config))
+        server.cam.start(StreamingMode.STREAM, CameraConfig(**config))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
@@ -38,8 +38,8 @@ class Mutation(graphene.ObjectType):
     def resolve_takePicture(self, info, config, streamConfig):
         server = info.context['server']
         config = json.loads(config)
-        server.cam.image(CameraConfig(config))
-        server.cam.start(StreamingMode.STREAM, CameraConfig(streamConfig))
+        server.cam.image(CameraConfig(**config))
+        server.cam.start(StreamingMode.STREAM, CameraConfig(**streamConfig))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
@@ -49,7 +49,7 @@ class Mutation(graphene.ObjectType):
         server = info.context['server']
         config = json.loads(config)
         mode = StreamingMode.BOTH if stream else StreamingMode.FILE
-        server.cam.start(mode, CameraConfig(config))
+        server.cam.start(mode, CameraConfig(**config))
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")

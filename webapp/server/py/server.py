@@ -12,7 +12,7 @@ import logging
 
 from .schema import schema
 from .gallery import Gallery
-from .camera import Camera, CameraConfig
+from .camera import Camera, CameraConfig, StreamingMode
 from .quad import MAVLinkProxy
 from .util import Ping
 
@@ -37,7 +37,7 @@ class Server:
         self.gallery = Gallery('/home/pi/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
-        self.cam.start(mode='stream', config=CameraConfig(
+        self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
             format='mjpeg',
             resolution=(640, 480),
             framerate=10,
