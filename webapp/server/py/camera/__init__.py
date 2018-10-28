@@ -10,6 +10,7 @@ try:
     from .v4l2cam import V4L2Cam
     print("Found V4L2 backend")
 except Exception as err:
+    print(err)
     V4L2Cam = None
 
 if RaspiCam is None and V4L2Cam is None:

@@ -34,15 +34,15 @@ def auto_hotspot(force=False):
 
 class Server:
     def __init__(self):
-        # self.gallery = Gallery('/home/pi/Camera')
-        self.gallery = Gallery('/home/jonas/Camera')
+        self.gallery = Gallery('/home/pi/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
         self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
             format='mjpeg',
             resolution=(640, 480),
             framerate=10,
-            bitrate=5000000
+            bitrate=5000000,
+            quality=25
         ))
 
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")

@@ -1,8 +1,12 @@
 from fcntl import ioctl
 from threading import Thread
+from PIL import Image
+from io import BytesIO
 import mmap
 import time
 import select
+
+from ..util import Stream
 
 from .python_space_camera import PythonSpaceCamera
 from .v4l2 import (
@@ -48,6 +52,26 @@ class _FPSLimit:
             self._last = ts
 
 
+class _SWCompressor:
+    def __init__(self, quality, on_frame):
+        self._quality = quality
+        self._on_frame = on_frame
+        self._counter = 0
+        self._stream = Stream('JPEG compressor (ms)')
+
+    def on_frame(self, frame):
+        src = Image.open(BytesIO(frame))
+        result = BytesIO()
+        t_comp = time.time()
+        src.save(result, "JPEG", quality=self._quality)
+        t_comp = time.time() - t_comp
+        self._on_frame(result.getvalue())
+
+        self._counter += 1
+        if self._counter % 10 == 0:
+            self._stream.register(1000 * t_comp)
+
+
 class _Stream(Thread):
     def __init__(self, fd, config, on_frame, num_buffers=2):
         super().__init__()
@@ -85,6 +109,10 @@ class _Stream(Thread):
         if 'resolution' in config.options:
             fmt.fmt.pix.width, fmt.fmt.pix.height = \
                 config.options['resolution']
+
+        if 'quality' in config.options and config.format == "mjpeg":
+            comp = _SWCompressor(config.options['quality'], self._on_frame)
+            self._on_frame = comp.on_frame
 
         if 'framerate' in config.options:
             parm.parm.capture.timeperframe.numerator = 1
