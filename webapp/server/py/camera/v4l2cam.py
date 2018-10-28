@@ -60,12 +60,16 @@ class _SWCompressor:
         self._stream = Stream('JPEG compressor (ms)')
 
     def on_frame(self, frame):
-        src = Image.open(BytesIO(frame))
-        result = BytesIO()
-        t_comp = time.time()
-        src.save(result, "JPEG", quality=self._quality)
-        t_comp = time.time() - t_comp
-        self._on_frame(result.getvalue())
+        try:
+            src = Image.open(BytesIO(frame))
+            result = BytesIO()
+            t_comp = time.time()
+            src.save(result, "JPEG", quality=self._quality)
+            t_comp = time.time() - t_comp
+            self._on_frame(result.getvalue())
+        except Exception:
+            self._on_frame(frame)
+
 
         self._counter += 1
         if self._counter % 10 == 0:
@@ -207,7 +211,7 @@ class V4L2Cam(PythonSpaceCamera):
         raise Exception("Unsupported atm")
 
     def _py_start(self, config):
-        self._fd = open("/dev/video1", "rb+", buffering=0)
+        self._fd = open("/dev/video0", "rb+", buffering=0)
         self._stream = _Stream(self._fd, config, self._on_frame)
         self._stream.start()
 
