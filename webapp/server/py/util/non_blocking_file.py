@@ -39,9 +39,12 @@ class NonBlockingFile(Thread):
 
     def run(self):
         while self._running:
-            data = self._queue.get()
-            self._file.write(data)
-            self._bitrate.register(len(data))
+            try:
+                data = self._queue.get(True, 1)
+                self._file.write(data)
+                self._bitrate.register(len(data))
+            except Exception:
+                self._bitrate.register(0)
 
 
 def is_file_write_in_progress():

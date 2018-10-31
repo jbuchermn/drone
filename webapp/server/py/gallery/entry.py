@@ -5,13 +5,14 @@ from PIL import Image
 from .converter import ConverterJob
 
 _containers = {
-    'h264': ['mp4', 'ffmpeg -y -i %s -vcodec copy %s'],
-    'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
+    'h264': ['mp4', 'ffmpeg -threads 2 -y -i %s -vcodec copy %s'],
+    # 'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
+    'mjpeg': ['mp4', 'ffmpeg -threads 2 -y -i %s %s'],
 }
 
 _thumbnails = {
-    'mp4': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
-    'avi': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    'mp4': ['jpeg', 'ffmpeg -threads 2 -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    # 'avi': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
     'jpeg': ['jpeg', 'convert -thumbnail x240 %s %s'],
 }
 
@@ -73,10 +74,10 @@ class Entry:
         """
         if self.format in _containers.keys():
             """
-            Convert to /tmp, only copy after success
+            Convert to tmp, only copy after success
             """
             ext, cmd = _containers[self.format]
-            target = os.path.join('/tmp', self.name + '.' + ext)
+            target = os.path.join(self._gallery.root_dir, 'tmp', self.name + '.' + ext)
             cmd = cmd % (self.filename(), target)
             self._gallery.add_job(ConverterJob(self, self.filename(),
                                                target, cmd))
@@ -93,7 +94,7 @@ class Entry:
         if self._container_target is not None and \
                 os.path.isfile(self._container_target):
             os.rename(self.filename(), os.path.join(
-                self._gallery.root_dir, 'backup', self.name + self.format))
+                self._gallery.root_dir, 'backup', self.name + '.' + self.format))
             self.format = _containers[self.format][0]
             os.rename(self._container_target, self.filename())
             self._container_target = None

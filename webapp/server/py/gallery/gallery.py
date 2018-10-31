@@ -7,7 +7,7 @@ from .entry import Entry
 class Gallery:
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        for f in ['img', 'vid', 'thumbnail', 'backup']:
+        for f in ['img', 'vid', 'thumbnail', 'backup', 'tmp']:
             folder = os.path.join(self.root_dir, f)
             if not os.path.exists(folder):
                 os.makedirs(folder)
