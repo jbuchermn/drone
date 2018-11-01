@@ -52,23 +52,31 @@ class _FPSLimit:
             self._last = ts
 
 
-class _SWCompressor:
+class _JPEGProcessor:
     def __init__(self, quality, on_frame):
         self._quality = quality
         self._on_frame = on_frame
         self._counter = 0
-        self._stream = Stream('JPEG compressor (ms)')
+        self._stream = Stream('JPEG processor (ms)')
 
     def on_frame(self, frame):
         try:
             src = Image.open(BytesIO(frame))
             result = BytesIO()
             t_comp = time.time()
+
+            """
+            Hardcoded configuration. But why would we ever want to change this value?
+            """
+            src = src.rotate(180)
             src.save(result, "JPEG", quality=self._quality)
             t_comp = time.time() - t_comp
             self._on_frame(result.getvalue())
         except Exception:
-            self._on_frame(frame)
+            """
+            Don't dispatch unprocessed frames
+            """
+            pass
 
 
         self._counter += 1
@@ -114,8 +122,12 @@ class _Stream(Thread):
             fmt.fmt.pix.width, fmt.fmt.pix.height = \
                 config.options['resolution']
 
-        if 'quality' in config.options and config.format == "mjpeg":
-            comp = _SWCompressor(config.options['quality'], self._on_frame)
+        quality = 100
+        if 'quality' in config.options:
+            quality = config.options['quality']
+
+        if config.format == 'mjpeg':
+            comp = _JPEGProcessor(quality, self._on_frame)
             self._on_frame = comp.on_frame
 
         if 'framerate' in config.options:
