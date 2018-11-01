@@ -39,10 +39,9 @@ class Server:
         self.cam = Camera(self.gallery, ws_port=8088)
         self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
             format='mjpeg',
-            resolution=(640, 480),
-            framerate=10,
-            bitrate=5000000,
-            quality=25
+            resolution=(640,480),
+            framerate=60,
+            quality=100
         ))
 
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
