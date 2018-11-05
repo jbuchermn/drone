@@ -18,6 +18,7 @@ from .v4l2 import (
     v4l2_requestbuffers,
     v4l2_buffer,
     v4l2_buf_type,
+    v4l2_queryctrl,
     VIDIOC_QUERYCAP,
     VIDIOC_REQBUFS,
     VIDIOC_QUERYBUF,
@@ -29,66 +30,17 @@ from .v4l2 import (
     VIDIOC_S_FMT,
     VIDIOC_G_PARM,
     VIDIOC_S_PARM,
+    VIDIOC_QUERYCTRL,
     V4L2_BUF_TYPE_VIDEO_CAPTURE,
     V4L2_MEMORY_MMAP,
     V4L2_CAP_TIMEPERFRAME,
-    V4L2_PIX_FMT_MJPEG,
+    V4L2_PIX_FMT_MJPEG
 )
 
 
 def _ubyte_to_str(arr):
     return "".join([chr(c) for c in arr])
 
-
-class _JPEGProcessor:
-    def __init__(self, quality, on_frame):
-        self._quality = quality
-        self._on_frame = on_frame
-        self._lock = Lock()
-        self._stream = Stream('JPEG processor (ms)')
-
-        self._pool = ThreadPoolExecutor(max_workers=2)
-
-        self._c = 0
-
-    def _process(self, frame):
-        return frame
-
-        src = Image.open(BytesIO(frame))
-        result = BytesIO()
-
-        """
-        Hardcoded configuration. But why would we ever want to change this value?
-        """
-        src = src.rotate(180)
-        src.save(result, "JPEG", quality=self._quality)
-        return result.getvalue()
-
-
-    def sync_on_frame(self, frame):
-        try:
-            t_proc = time.time()
-            frame = self._process(frame)
-            t_proc = time.time() - t_proc
-
-            with self._lock:
-                self._stream.register(1000. * t_proc)
-
-                self._on_frame(frame)
-
-        except Exception:
-            """
-            Don't dispatch unprocessed frames
-            """
-            # print("WARNING: Faulty frame")
-            pass
-
-    def on_frame(self, frame):
-        # self.sync_on_frame(frame)
-        self._pool.submit(self.sync_on_frame, frame)
-
-    def close(self):
-        self._pool.shutdown()
 
 class _JPEGStripper:
     def __init__(self, on_frame):
@@ -136,13 +88,13 @@ class _Stream(Thread):
         """
         Print info
         """
-        self._cp = v4l2_capability()
-        ioctl(self._fd, VIDIOC_QUERYCAP, self._cp)
+        cp = v4l2_capability()
+        ioctl(self._fd, VIDIOC_QUERYCAP, cp)
 
         print("Opened v4l2 device '%s':" % self._fd.name)
-        print("\tDriver:  %s" % _ubyte_to_str(self._cp.driver))
-        print("\tCard:    %s" % _ubyte_to_str(self._cp.card))
-        print("\tBusinfo: %s" % _ubyte_to_str(self._cp.bus_info))
+        print("\tDriver:  %s" % _ubyte_to_str(cp.driver))
+        print("\tCard:    %s" % _ubyte_to_str(cp.card))
+        print("\tBusinfo: %s" % _ubyte_to_str(cp.bus_info))
 
         """
         Handle configuration
@@ -171,7 +123,6 @@ class _Stream(Thread):
         self._proc = None
         if config.format in ['mjpeg', 'jpeg']:
             self._proc = _JPEGStripper(self._on_frame)
-            # self._proc = _JPEGProcessor(quality, self._on_frame)
             self._on_frame = self._proc.on_frame
 
         self._time_per_frame = 0.
@@ -293,7 +244,7 @@ class V4L2Cam(PythonSpaceCamera):
 
             def on_frame(self, frame):
                 self._counter += 1
-                if self._counter == 5:
+                if self._counter == 10:
                     self.stream.stop()
                     with open(self._path, 'wb') as img:
                         img.write(frame)

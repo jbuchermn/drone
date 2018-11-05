@@ -1,6 +1,7 @@
 #!/bin/sh
 cd /home/pi/drone/webapp/server
 
+sleep 20
 
 # Will only work on fast-forward merges
 # echo "Calling git pull..." >> log
