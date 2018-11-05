@@ -67,8 +67,8 @@ export default class LiveStream extends React.Component{
         let PlayerClass = null;
         if(format == 'mjpeg'){
             PlayerClass = MJPEGplayer;
-        }else if(format == 'h264'){
-            PlayerClass = WSAvc;
+        // }else if(format == 'h264'){
+        //     PlayerClass = WSAvc;
         }else{
             console.log("Unsupported:", this.props.config.format)
             return;
@@ -76,7 +76,7 @@ export default class LiveStream extends React.Component{
 
         let player = new PlayerClass(
             this._canvasRef.current,
-            { x, y, w, h }
+            { x, y, w, h, flipped: true }
         );
 
 

@@ -1,6 +1,6 @@
 export default class MJPEGplayer{
     constructor(canvas, {
-        x, y, w, h
+        x, y, w, h, flipped
     }) {
         let ctx = canvas.getContext('2d');
         if(!ctx){
@@ -8,11 +8,14 @@ export default class MJPEGplayer{
             return;
         }
 
+        if(flipped) ctx.scale(-1, -1);
+
         let img = new Image()
         let imgUrl = null;
 
         img.onload = () => {
-            ctx.drawImage(img, x, y, w, h);
+            if(flipped) ctx.drawImage(img, -x, -y, -w, -h);
+                else ctx.drawImage(img, x, y, w, h);
             (URL || webkitURL).revokeObjectURL(imgUrl);
         }
 
