@@ -35,6 +35,13 @@ fi
 
 if [ "$DRONE_FOUND" = 1 ]; then
     echo "Found drone @ IP: $DRONE_IP"
+    read -p "Command ([s]sh, [f]irefox) " command
+    if [ $command = s ]; then
+        ssh "pi@$DRONE_IP"
+    fi
+    if [ $command = f ]; then
+        firefox "http://$DRONE_IP:5000"
+    fi
 else
     echo "Could not find drone"
 fi
