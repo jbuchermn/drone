@@ -1,7 +1,7 @@
 import traceback
 from threading import Thread
 from queue import Queue
-from .bitrate import Bitrate
+from .rate_stream import RateStream
 
 
 _open_files = []
@@ -13,7 +13,7 @@ class NonBlockingFile(Thread):
 
         super().__init__()
         self._file = open(filename, mode)
-        self._bitrate = Bitrate('File: %s' % filename)
+        self._bitrate = RateStream('File: %s (Mbit/s)' % filename)
         self._running = True
         self._queue = Queue()
 
@@ -42,7 +42,7 @@ class NonBlockingFile(Thread):
             try:
                 data = self._queue.get(True, 1)
                 self._file.write(data)
-                self._bitrate.register(len(data))
+                self._bitrate.register(len(data)*8./1.e6)
             except Exception:
                 self._bitrate.register(0)
 

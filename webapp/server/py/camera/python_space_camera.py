@@ -1,7 +1,8 @@
 from abc import abstractmethod
+import time
 
 from .camera import Camera
-from ..util import Bitrate, WSBroadcast, NonBlockingFile
+from ..util import RateStream, WSBroadcast, NonBlockingFile
 
 
 _sep = {
@@ -14,7 +15,8 @@ class PythonSpaceCamera(Camera):
     def __init__(self, gallery, ws_port):
         super().__init__(gallery, ws_port)
         self._ws_broadcast = WSBroadcast('Camera', self.ws_port)
-        self._bitrate = Bitrate('Camera')
+        self._bitrate = RateStream('Camera (Mbit/s)')
+        self._framerate = RateStream('Camera (fps)')
 
         self._dat = bytearray()  # Used in _on_buffer mode
         self._cur_file = None
@@ -45,7 +47,8 @@ class PythonSpaceCamera(Camera):
         To be called by the subclasses implementing backends
         or by _on_buffer
         """
-        self._bitrate.register(len(frame))
+        self._bitrate.register(len(frame)*8./1.e6)
+        self._framerate.register(1.)
         self._ws_broadcast.message(frame)
         if self._cur_file is not None:
             self._cur_file.write(frame)
@@ -99,7 +102,7 @@ class PythonSpaceCamera(Camera):
             self._cur_file = None
 
     def _close(self):
-        self._ws_broadcast.stop()
+        self._ws_broadcast.close()
         if self._cur_file is not None:
             self._cur_file.close()
 
