@@ -43,7 +43,7 @@ class Server:
             framerate=20
         ))
 
-        self.mavlink_proxy = MAVLinkProxy("/dev/ttyAMA0")
+        self.mavlink_proxy = MAVLinkProxy("/dev/ttyS3")
 
         self.client_ip = None
         self.client_ping = None

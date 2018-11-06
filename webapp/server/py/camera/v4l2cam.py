@@ -37,6 +37,8 @@ from .v4l2 import (
     V4L2_PIX_FMT_MJPEG
 )
 
+V4L2_DEVICE = "/dev/video0"
+
 
 def _ubyte_to_str(arr):
     return "".join([chr(c) for c in arr])
@@ -251,7 +253,7 @@ class V4L2Cam(PythonSpaceCamera):
 
         closure = _(path)
 
-        fd = open("/dev/video0", "rb+", buffering=0)
+        fd = open(V4L2_DEVICE, "rb+", buffering=0)
         stream = _Stream(fd, config, closure.on_frame)
         closure.stream = stream
         stream.start()
@@ -261,7 +263,7 @@ class V4L2Cam(PythonSpaceCamera):
     def _py_start(self, config):
         if self._fd is not None or self._stream is not None:
             raise Exception("Call _py_stop first!")
-        self._fd = open("/dev/video0", "rb+", buffering=0)
+        self._fd = open(V4L2_DEVICE, "rb+", buffering=0)
         self._stream = _Stream(self._fd, config, self._on_frame)
         self._stream.start()
 
