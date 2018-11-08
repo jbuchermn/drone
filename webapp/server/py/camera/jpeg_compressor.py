@@ -58,7 +58,6 @@ class JPEGCompressor:
 
     def on_frame(self, frame):
         if not self._threads[self._current].ready:
-            print("D")
             return
         self._threads[self._current].put(frame)
         self._current = (self._current + 1) % len(self._threads)
