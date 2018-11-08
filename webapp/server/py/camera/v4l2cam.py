@@ -9,6 +9,8 @@ import select
 
 from ..util import Stream, RateStream
 
+from .jpeg_reencode.build.jpeg_reencode import reencode
+
 from .python_space_camera import PythonSpaceCamera
 from .v4l2 import (
     v4l2_fourcc_to_str,
@@ -77,6 +79,17 @@ class _JPEGStripper:
         self._on_frame(frame[:min(length + 3, len(frame))])
 
 
+class _JPEGCompressor:
+    def __init__(self, on_frame, quality):
+        self._on_frame = on_frame
+        self._factor = 100./quality
+
+    def close(self):
+        pass
+
+    def on_frame(self, frame):
+        self._on_frame(reencode(frame, self._factor))
+
 
 class _Stream(Thread):
     def __init__(self, fd, config, on_frame, num_buffers=2):
@@ -118,14 +131,14 @@ class _Stream(Thread):
             fmt.fmt.pix.width, fmt.fmt.pix.height = \
                 config.options['resolution']
 
-        quality = 100
-        if 'quality' in config.options:
-            quality = config.options['quality']
-
         self._proc = None
         if config.format in ['mjpeg', 'jpeg']:
-            self._proc = _JPEGStripper(self._on_frame)
-            self._on_frame = self._proc.on_frame
+            if 'quality' in config.options:
+                self._proc = _JPEGCompressor(self._on_frame, config.options['quality'])
+                self._on_frame = self._proc.on_frame
+            else:
+                self._proc = _JPEGStripper(self._on_frame)
+                self._on_frame = self._proc.on_frame
 
         self._time_per_frame = 0.
         if 'framerate' in config.options:

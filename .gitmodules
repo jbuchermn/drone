@@ -4,3 +4,6 @@
 [submodule "webapp/server/cpp/cmavnode"]
 	path = webapp/server/cpp/cmavnode
 	url = https://github.com/MonashUAS/cmavnode
+[submodule "webapp/server/py/camera/jpeg_reencode"]
+	path = webapp/server/py/camera/jpeg_reencode
+	url = https://github.com/jbuchermn/jpeg-reencode

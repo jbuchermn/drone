@@ -6,13 +6,13 @@ from .converter import ConverterJob
 
 _containers = {
     'h264': ['mp4', 'ffmpeg -threads 2 -y -i %s -vcodec copy %s'],
-    # 'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
-    'mjpeg': ['mp4', 'ffmpeg -threads 2 -y -i %s %s'],
+    'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
+    # 'mjpeg': ['mp4', 'ffmpeg -threads 2 -y -i %s %s'],
 }
 
 _thumbnails = {
     'mp4': ['jpeg', 'ffmpeg -threads 2 -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
-    # 'avi': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
+    'avi': ['jpeg', 'ffmpeg -y -i %s -vf select=eq(n\\,0),scale=-1:240 -v:frames 1 %s'],  # noqa E501
     'jpeg': ['jpeg', 'convert -thumbnail x240 %s %s'],
 }
 
