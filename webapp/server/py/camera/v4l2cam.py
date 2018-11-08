@@ -10,8 +10,6 @@ import select
 
 from ..util import Stream, RateStream
 
-from .jpeg_reencode.build.jpeg_reencode import reencode
-
 from .python_space_camera import PythonSpaceCamera
 from .v4l2 import (
     v4l2_fourcc_to_str,
@@ -39,6 +37,8 @@ from .v4l2 import (
     V4L2_CAP_TIMEPERFRAME,
     V4L2_PIX_FMT_MJPEG
 )
+
+from .jpeg_compressor import JPEGCompressor
 
 V4L2_DEVICE = "/dev/video0"
 WORKERS = 2
@@ -79,26 +79,6 @@ class _JPEGStripper:
             length -= 1
 
         self._on_frame(frame[:min(length + 3, len(frame))])
-
-
-class _JPEGCompressor:
-    def __init__(self, on_frame, quality):
-        self._on_frame = on_frame
-        self._factor = 100./quality
-        self._exec = ThreadPoolExecutor(max_workers=WORKERS)
-        self._stream = Stream('JPEG compress (ms)')
-
-    def close(self):
-        self._exec.shutdown()
-
-    def on_frame_sync(self, frame):
-        t = time.time()
-        self._on_frame(reencode(frame, self._factor))
-        t = time.time() - t
-        self._stream.register(1000.*t)
-
-    def on_frame(self, frame):
-        self._exec.submit(self.on_frame_sync, frame)
 
 
 class _Stream(Thread):
@@ -144,7 +124,7 @@ class _Stream(Thread):
         self._proc = None
         if config.format in ['mjpeg', 'jpeg']:
             if 'quality' in config.options:
-                self._proc = _JPEGCompressor(self._on_frame, config.options['quality'])
+                self._proc = JPEGCompressor(self._on_frame, WORKERS, config.options['quality'])
                 self._on_frame = self._proc.on_frame
             else:
                 self._proc = _JPEGStripper(self._on_frame)
