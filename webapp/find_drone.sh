@@ -2,7 +2,7 @@
 
 # Set WIFI_CONNECTION to the SSID the drone would automatically connect with
 
-DRONE_IP="172.16.0.110"
+DRONE_IP="172.16.0.127"
 DRONE_FOUND=0
 
 nmcli connection up id $WIFI_CONNECTION
@@ -40,7 +40,7 @@ if [ "$DRONE_FOUND" = 1 ]; then
         ssh "pi@$DRONE_IP"
     fi
     if [ $command = f ]; then
-        firefox "http://$DRONE_IP:5000"
+        firefox "http://$DRONE_IP:5000" &
     fi
 else
     echo "Could not find drone"

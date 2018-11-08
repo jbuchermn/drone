@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from fcntl import ioctl
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
@@ -40,6 +41,7 @@ from .v4l2 import (
 )
 
 V4L2_DEVICE = "/dev/video0"
+WORKERS = 2
 
 
 def _ubyte_to_str(arr):
@@ -83,12 +85,20 @@ class _JPEGCompressor:
     def __init__(self, on_frame, quality):
         self._on_frame = on_frame
         self._factor = 100./quality
+        self._exec = ThreadPoolExecutor(max_workers=WORKERS)
+        self._stream = Stream('JPEG compress (ms)')
 
     def close(self):
-        pass
+        self._exec.shutdown()
+
+    def on_frame_sync(self, frame):
+        t = time.time()
+        self._on_frame(reencode(frame, self._factor))
+        t = time.time() - t
+        self._stream.register(1000.*t)
 
     def on_frame(self, frame):
-        self._on_frame(reencode(frame, self._factor))
+        self._exec.submit(self.on_frame_sync, frame)
 
 
 class _Stream(Thread):

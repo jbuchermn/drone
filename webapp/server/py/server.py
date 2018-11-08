@@ -1,6 +1,7 @@
 import traceback
 from subprocess import Popen, PIPE
 from threading import Thread
+import os
 import random
 import time
 import signal
@@ -34,7 +35,7 @@ def auto_hotspot(force=False):
 
 class Server:
     def __init__(self):
-        self.gallery = Gallery('/home/pi/Camera')
+        self.gallery = Gallery(os.environ['HOME'] + '/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
         self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
