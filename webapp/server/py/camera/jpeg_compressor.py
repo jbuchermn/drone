@@ -1,7 +1,7 @@
 from threading import Thread
-from queue import Queue
-from .jpeg_reencode.build.jpeg_reencode import reencode
+from queue import Queue, Empty
 import time
+from .jpeg_reencode.build.jpeg_reencode import reencode
 
 
 class _Worker(Thread):
@@ -11,7 +11,9 @@ class _Worker(Thread):
         self._quality = quality
         self._num = num
         self._running = True
+
         self._queue = Queue()
+        self.ready = True
 
     def put(self, frame):
         self._queue.put(frame)
@@ -21,16 +23,14 @@ class _Worker(Thread):
 
     def run(self):
         while self._running:
+            self.ready = True
             try:
                 frame = self._queue.get(True, 1)
-                print("S(%d): %d" % (self._num, id(frame)))
+                self.ready = False
                 nframe = reencode(frame, 100./self._quality)
-                print("D(%d): %d" % (self._num, id(frame)))
                 self._parent.deliver_frame(nframe)
-            except Exception as err:
-                print(err)
+            except Empty:
                 pass
-
 
 
 class JPEGCompressor:
@@ -42,6 +42,8 @@ class JPEGCompressor:
 
         self._current = 0
 
+        self._first = True
+
     def close(self):
         for t in self._threads:
             t.stop()
@@ -50,6 +52,8 @@ class JPEGCompressor:
         self._on_frame(frame)
 
     def on_frame(self, frame):
+        if not self._threads[self._current].ready:
+            return
         self._threads[self._current].put(frame)
         self._current = (self._current + 1) % len(self._threads)
 

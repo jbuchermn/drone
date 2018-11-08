@@ -41,6 +41,7 @@ from .v4l2 import (
 from .jpeg_compressor import JPEGCompressor
 
 V4L2_DEVICE = "/dev/video0"
+N_BUFFERS = 4
 WORKERS = 2
 
 
@@ -48,41 +49,34 @@ def _ubyte_to_str(arr):
     return "".join([chr(c) for c in arr])
 
 
-class _JPEGStripper:
-    def __init__(self, on_frame):
-        self._on_frame = on_frame
+def _strip_jpeg(frame):
+    length_upper = len(frame)
+    length_lower = 0
 
-    def close(self):
-        pass
+    def is_zero(frame, idx):
+        for i in range(idx - 1, idx + 1):
+            if i < 0 or i >= len(frame):
+                continue
+            if frame[i] != 0:
+                return False
+        return True
 
-    def on_frame(self, frame):
-        length_upper = len(frame)
-        length_lower = 0
+    for _ in range(10):
+        tmp = int((length_upper + length_lower)/2)
+        if is_zero(frame, tmp):
+            length_upper = tmp
+        else:
+            length_lower = tmp
 
-        def is_zero(frame, idx):
-            for i in range(idx - 1, idx + 1):
-                if i < 0 or i >= len(frame):
-                    continue
-                if frame[i] != 0:
-                    return False
-            return True
+    length = length_upper
+    while frame[length - 1] == 0:
+        length -= 1
 
-        for _ in range(10):
-            tmp = int((length_upper + length_lower)/2)
-            if is_zero(frame, tmp):
-                length_upper = tmp
-            else:
-                length_lower = tmp
-
-        length = length_upper
-        while frame[length - 1] == 0:
-            length -= 1
-
-        self._on_frame(frame[:min(length + 3, len(frame))])
+    return frame[:min(length + 3, len(frame))]
 
 
 class _Stream(Thread):
-    def __init__(self, fd, config, on_frame, num_buffers=2):
+    def __init__(self, fd, config, on_frame):
         super().__init__()
         self._fd = fd
         self._on_frame = on_frame
@@ -126,9 +120,6 @@ class _Stream(Thread):
             if 'quality' in config.options:
                 self._proc = JPEGCompressor(self._on_frame, WORKERS, config.options['quality'])
                 self._on_frame = self._proc.on_frame
-            else:
-                self._proc = _JPEGStripper(self._on_frame)
-                self._on_frame = self._proc.on_frame
 
         self._time_per_frame = 0.
         if 'framerate' in config.options:
@@ -159,8 +150,9 @@ class _Stream(Thread):
         req = v4l2_requestbuffers()
         req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
         req.memory = V4L2_MEMORY_MMAP
-        req.count = num_buffers
+        req.count = N_BUFFERS
         ioctl(self._fd, VIDIOC_REQBUFS, req)
+
 
         self._buffers = []
 
@@ -191,6 +183,8 @@ class _Stream(Thread):
         Main loop
         """
         last_frame = 0
+
+        s = Stream('DQBUF (ms)')
         while self._running:
             """
             FPS Limiter
@@ -203,11 +197,12 @@ class _Stream(Thread):
             buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
             buf.memory = V4L2_MEMORY_MMAP
 
-            """
-            Asynchronous processing => Copy
-            """
+            t = time.time()
             ioctl(self._fd, VIDIOC_DQBUF, buf)
-            frame = bytes(self._buffers[buf.index])
+            t = time.time() - t
+            s.register(1000.*t)
+
+            frame = _strip_jpeg(self._buffers[buf.index])
             ioctl(self._fd, VIDIOC_QBUF, buf)
 
             self._raw_fps.register(1.)

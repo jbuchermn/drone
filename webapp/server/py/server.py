@@ -41,7 +41,7 @@ class Server:
         self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
             format='mjpeg',
             resolution=(640, 480),
-            framerate=20,
+            framerate=120,
             quality=10
         ))
 
