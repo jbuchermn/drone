@@ -25,9 +25,10 @@ class CameraConfig:
     def __init__(self, format=None, **kwargs):
         if 'load_json' in kwargs and 'default' in kwargs:
             try:
-                with open('load_json', 'r') as f:
+                with open(kwargs['load_json'], 'r') as f:
                     kwargs = json.loads(f.read())
             except Exception:
+                traceback.print_exc()
                 kwargs = kwargs['default']
 
             format = kwargs['format']
