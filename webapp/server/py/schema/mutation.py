@@ -13,11 +13,12 @@ class CameraGalleryType(graphene.ObjectType):
 
 
 class Mutation(graphene.ObjectType):
-    startStream = graphene.Field(CameraGalleryType, config=graphene.String())
-    takePicture = graphene.Field(CameraGalleryType, config=graphene.String(),
-                                 streamConfig=graphene.String())
-    takeVideo = graphene.Field(CameraGalleryType, stream=graphene.Boolean(),
-                               config=graphene.String())
+    cameraStart = graphene.Field(CameraGalleryType, record=graphene.Boolean(), stream=graphene.Boolean())
+    cameraStop = graphene.Field(CameraGalleryType)
+    cameraImage = graphene.Field(CameraGalleryType)
+    cameraSetStreamConfig = graphene.Field(CameraGalleryType, config=graphene.String())
+    cameraSetVideoConfig = graphene.Field(CameraGalleryType, config=graphene.String())
+    cameraSetImageConfig = graphene.Field(CameraGalleryType, config=graphene.String())
 
     startMAVLinkProxy = graphene.Field(MAVLinkProxyType,
                                        addr=graphene.String(required=False))
@@ -26,35 +27,53 @@ class Mutation(graphene.ObjectType):
     autoHotspot = graphene.Field(graphene.Int, config=graphene.String())
     shutdownServer = graphene.Field(graphene.Int)
 
-    def resolve_startStream(self, info, config):
+    def resolve_cameraStart(self, info, record, stream):
         server = info.context['server']
-        config = json.loads(config)
-        server.cam.start(StreamingMode.STREAM, CameraConfig(**config))
+        mode = None
+        if record and stream:
+            mode = StreamingMode.BOTH
+        elif record and not stream:
+            mode = StreamingMode.FILE
+        elif not record and stream:
+            mode = StreamingMode.STREAM
+        else:
+            raise Exception("Call cameraStop")
+        server.cam.start(mode)
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
         )
 
-    def resolve_takePicture(self, info, config, streamConfig):
+    def resolve_cameraStop(self, info):
         server = info.context['server']
-        config = json.loads(config)
-        streamConfig = json.loads(streamConfig)
-        server.cam.image(CameraConfig(**config))
-        server.cam.start(StreamingMode.STREAM, CameraConfig(**streamConfig))
+        server.cam.stop()
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
         )
 
-    def resolve_takeVideo(self, info, stream, config):
+    def resolve_cameraImage(self, info):
         server = info.context['server']
-        config = json.loads(config)
-        mode = StreamingMode.BOTH if stream else StreamingMode.FILE
-        server.cam.start(mode, CameraConfig(**config))
+        server.cam.image()
         return CameraGalleryType(
             camera=CameraType(server, id="1"),
             gallery=GalleryType(server, id="1")
         )
+
+    def resolve_cameraSetStreamConfig(self, info, config):
+        server = info.context['server']
+        config = json.loads(config)
+        server.cam.set_stream_config(CameraConfig(**config))
+
+    def resolve_cameraSetVideoConfig(self, info, config):
+        server = info.context['server']
+        config = json.loads(config)
+        server.cam.set_video_config(CameraConfig(**config))
+
+    def resolve_cameraSetImageConfig(self, info, config):
+        server = info.context['server']
+        config = json.loads(config)
+        server.cam.set_image_config(CameraConfig(**config))
 
     def resolve_startMAVLinkProxy(self, info, addr=None):
         server = info.context['server']
