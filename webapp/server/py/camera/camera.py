@@ -1,4 +1,5 @@
 import traceback
+import json
 from abc import abstractmethod
 from enum import Enum
 
@@ -22,6 +23,16 @@ class StreamingMode(Enum):
 
 class CameraConfig:
     def __init__(self, format=None, **kwargs):
+        if 'load_json' in kwargs and 'default' in kwargs:
+            try:
+                with open('load_json', 'r') as f:
+                    kwargs = json.loads(f.read())
+            except Exception:
+                kwargs = kwargs['default']
+
+            format = kwargs['format']
+            del kwargs['format']
+
         if format is None:
             raise Exception("Need to specify format")
 
@@ -40,6 +51,10 @@ class CameraConfig:
         else:
             self.options[key] = val
 
+    def save_json(self, path):
+        with open(path, 'w') as f:
+            f.write(json.dumps({'format': self.format, **self.options}))
+
 
 class Camera:
     """
@@ -56,9 +71,29 @@ class Camera:
         self.ws_port = ws_port
 
         """
+        Load (and save in case of defaults) configuration
+        """
+        self._stream_config = CameraConfig(load_json='./stream_config.json', default={
+            'format': 'mjpeg',
+            'framerate': 10,
+            'resolution': [320, 240]
+        })
+        self._stream_config.save_json('./stream_config.json')
+        self._video_config = CameraConfig(load_json='./video_config.json', default={
+            'format': 'mjpeg',
+            'framerate': 30,
+            'resolution': [1280, 720]
+        })
+        self._video_config.save_json('./video_config.json')
+        self._image_config = CameraConfig(load_json='./image_config.json', default={
+            'format': 'jpeg',
+            'resolution': [1920, 1080]
+        })
+        self._image_config.save_json('./image_config.json')
+
+        """
         Set during streaming
         """
-        self._cur_config = None
         self._cur_mode = None
 
         """
@@ -125,27 +160,27 @@ class Camera:
     def close(self):
         self._close()
 
-    def image(self, config):
-        if self._cur_config is not None:
+    def image(self):
+        if self._cur_mode is not None:
             self.stop()
+            self._cur_mode = None
 
-        entry = self.gallery.new_image(config.format)
-        self._image(config, entry.filename())
+        entry = self.gallery.new_image(self._image_config.format)
+        self._image(self._image_config, entry.filename())
         entry.process()
 
-    def start(self, mode, config):
-        if self._cur_config is not None:
+    def start(self, mode):
+        if self._cur_mode is not None:
             self.stop()
 
         self._cur_mode = mode
-        self._cur_config = config
 
         path = None
         if mode == StreamingMode.FILE or mode == StreamingMode.BOTH:
-            self._cur_entry = self.gallery.new_video(format=config.format)
+            self._cur_entry = self.gallery.new_video(format=self._video_config.format)
             path = self._cur_entry.filename()
 
-        self._start(mode, self._cur_config, path=path)
+        self._start(mode, self._stream_config if mode == StreamingMode.STREAM else self._video_config, path=path)
 
     def stop(self):
         self._stop()
@@ -153,10 +188,27 @@ class Camera:
             self._cur_entry.process()
             self._cur_entry = None
         self._cur_mode = None
-        self._cur_config = None
 
     def get_current_streaming_mode(self):
         return self._cur_mode
 
-    def get_current_config(self):
-        return self._cur_config
+    def get_stream_config(self):
+        return self._stream_config
+
+    def get_video_config(self):
+        return self._video_config
+
+    def get_image_config(self):
+        return self._image_config
+
+    def set_stream_config(self, config):
+        self._stream_config = config
+        self._stream_config.save_json('./stream_config.json')
+
+    def set_video_config(self, config):
+        self._video_config = config
+        self._video_config.save_json('./video_config.json')
+
+    def set_image_config(self, config):
+        self._image_config = config
+        self._image_config.save_json('./image_config.json')
