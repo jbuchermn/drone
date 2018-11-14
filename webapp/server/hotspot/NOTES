@@ -1,4 +1,5 @@
 # http://www.raspberryconnect.com/network/item/331-raspberry-pi-auto-wifi-hotspot-switch-no-internet-routing
+# ! REMOVE NetworkManager -- does not work
 
 sudo apt install hostapd dnsmasq
 sudo systemctl disable hostapd
