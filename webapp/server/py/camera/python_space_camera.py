@@ -19,6 +19,7 @@ class PythonSpaceCamera(Camera):
         self._framerate = RateStream('Camera (fps)')
 
         self._dat = bytearray()  # Used in _on_buffer mode
+        self._cur_format = None
         self._cur_file = None
 
         self._ws_broadcast.start()
@@ -31,7 +32,7 @@ class PythonSpaceCamera(Camera):
         To be called by the subclasses implementing backends
         """
 
-        sep = _sep[self.get_current_config().format]
+        sep = _sep[self._cur_format]
         self._dat += buf
         i = self._dat.find(sep, len(sep))
         while i != -1:
@@ -92,6 +93,7 @@ class PythonSpaceCamera(Camera):
             self._cur_file = NonBlockingFile(path, 'wb')
             self._cur_file.start()
 
+        self._cur_format = config.format
         self._py_start(config)
 
     def _stop(self):

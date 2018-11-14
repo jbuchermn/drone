@@ -38,13 +38,6 @@ class Server:
         self.gallery = Gallery(os.environ['HOME'] + '/Camera')
 
         self.cam = Camera(self.gallery, ws_port=8088)
-        self.cam.start(mode=StreamingMode.STREAM, config=CameraConfig(
-            format='mjpeg',
-            resolution=(1920, 1080),
-            framerate=30,
-            quality=50
-        ))
-
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyS3")
 
         self.client_ip = None

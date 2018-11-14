@@ -7,3 +7,4 @@ ssl
 **/._.DS_Store
 **/*.o
 webapp/server/log
+webapp/server/*.json
