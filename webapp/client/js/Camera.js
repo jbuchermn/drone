@@ -18,21 +18,27 @@ const CAMERA_QUERY = gql`
 query Camera{
     camera{
         id,
-        recording,
-        config,
         wsPort 
+        recording,
+        streaming,
+        videoConfig,
+        streamConfig,
+        imageConfig
     }
 }
 `
 
-const TAKE_VIDEO_MUTATION = gql`
-mutation TakeVideo($config: String!, $stream: Boolean!){ 
-    takeVideo(config: $config, stream: $stream){
+const CAMERA_START_MUTATION = gql`
+mutation CameraStart($record: Boolean!, $stream: Boolean!){ 
+    cameraStart(record: $record, stream: $stream){
         camera{
             id,
+            wsPort 
             recording,
-            config,
-            wsPort
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
         },
         gallery{
             id,
@@ -46,14 +52,17 @@ mutation TakeVideo($config: String!, $stream: Boolean!){
 }
 `
 
-const TAKE_PICTURE_MUTATION = gql`
-mutation TakePicture($config: String!, $streamConfig: String!){ 
-    takePicture(config: $config, streamConfig: $streamConfig){
+const CAMERA_STOP_MUTATION = gql`
+mutation CameraStop{ 
+    cameraStop{
         camera{
             id,
+            wsPort 
             recording,
-            config,
-            wsPort
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
         },
         gallery{
             id,
@@ -67,14 +76,17 @@ mutation TakePicture($config: String!, $streamConfig: String!){
 }
 `
 
-const START_STREAM_MUTATION = gql`
-mutation StartStream($config: String!){ 
-    startStream(config: $config){
+const CAMERA_IMAGE_MUTATION = gql`
+mutation CameraImage{ 
+    cameraImage{
         camera{
             id,
+            wsPort 
             recording,
-            config,
-            wsPort
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
         },
         gallery{
             id,
@@ -88,23 +100,77 @@ mutation StartStream($config: String!){
 }
 `
 
-
-function CameraButtons(props){
-    const record = props.recording ? props.startStream : props.takeVideo;
-    return (
-        <div>
-            <Button variant="contained" color="primary" onClick={record}>
-                {props.recording ? "Recording" : "Record"}
-            </Button>
-            <Button variant="contained" color="primary" onClick={props.takePicture}>
-                Picture
-            </Button>
-            <Button variant="contained" color="primary" onClick={props.startStream}>
-                Update
-            </Button>
-        </div>
-    )
+const CAMERA_SET_VIDEO_CONFIG_MUTATION = gql`
+mutation CameraSetVideoConfig($config: String!){
+    cameraSetVideoConfig(config: $config){
+        camera{
+            id,
+            wsPort 
+            recording,
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
+        },
+        gallery{
+            id,
+            entries{
+                id,
+                kind,
+                name
+            }
+        }
+    }
 }
+`
+
+const CAMERA_SET_STREAM_CONFIG_MUTATION = gql`
+mutation CameraSetStreamConfig($config: String!){
+    cameraSetStreamConfig(config: $config){
+        camera{
+            id,
+            wsPort 
+            recording,
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
+        },
+        gallery{
+            id,
+            entries{
+                id,
+                kind,
+                name
+            }
+        }
+    }
+}
+`
+
+const CAMERA_SET_IMAGE_CONFIG_MUTATION = gql`
+mutation CameraSetImageConfig($config: String!){
+    cameraSetImageConfig(config: $config){
+        camera{
+            id,
+            wsPort 
+            recording,
+            streaming,
+            videoConfig,
+            streamConfig,
+            imageConfig
+        },
+        gallery{
+            id,
+            entries{
+                id,
+                kind,
+                name
+            }
+        }
+    }
+}
+`
 
 class JSONConfig extends React.Component{
     constructor(props){
@@ -178,87 +244,74 @@ class CameraInner extends React.Component{
         super(props);
 
         this.state = {
-            videoConfig: JSON.stringify({
-                format: "h264",
-                resolution: [1920, 1080],
-                bitrate: 0,
-                quality: 10,
-                framerate: 24
-            }),
-            pictureConfig: JSON.stringify({
-                format: "jpeg"
-            }),
-            streamConfig: null
-        };
+            streamConfig: null,
+            videoConfig: null,
+            imageConfig: null
+        }
     }
-
-    static getDerivedStateFromProps(props, state){
-        return {
-            streamConfig: state.streamConfig || props.camera.config
+    
+    static getDerivedStateFromProps(props, prevState){
+        return { 
+            streamConfig: prevState.streamConfig || props.camera.streamConfig,
+            videoConfig: prevState.streamConfig || props.camera.videoConfig,
+            imageConfig: prevState.streamConfig || props.camera.imageConfig
         };
     }
 
     render(){
-        const _takePicture = () => {
-            this.props.takePicture({
-                variables: {
-                    config: this.state.pictureConfig,
-                    streamConfig: this.state.streamConfig
-                }
-            });
-        };
-
-        const _takeVideo = () => {
-            this.props.takeVideo({
-                variables: {
-                    config: this.state.videoConfig,
-                    stream: true
-                }
-            });
-        };
-
-        const _startStream = () => {
-            this.props.startStream({
-                variables: {
-                    config: this.state.streamConfig
-                }
-            });
-        };
-
-        const recordClicked = () => {
+        const record = () => {
             if(this.props.camera.recording){
-                _startStream();
+                this.props.stop();
             }else{
-                _takeVideo();
+                this.props.start({ variables: { stream: false, record: true } });
             }
-        }
+        };
+
+        const stream = () => {
+            if(this.props.camera.streaming){
+                this.props.stop();
+            }else{
+                this.props.start({ variables: { stream: true, record: false } });
+            }
+        };
+
+        const updateVideo = () => this.props.setVideoConfig({ variables: { config: this.state.videoConfig } });
+        const updateImage = () => this.props.setImageConfig({ variables: { config: this.state.imageConfig } });
+        const updateStream = () => {
+            this.props.setStreamConfig({ variables: { config: this.state.streamConfig } });
+            if(this.props.camera.streaming){
+                this.props.start({ variables: { stream: true, record: false } });
+            }
+        };
+        
 
         return (
             <Grid container spacing={24}>
                 <Grid item xs={12}>
                     <div style={{ marginTop: 24 }}>
-                        <LiveStream 
+                        {this.props.camera.streaming && <LiveStream 
                             port={this.props.camera.wsPort}
-                            config={JSON.parse(this.props.camera.config)}
+                            config={JSON.parse(this.props.camera.streamConfig)}
                             width={LIVE_STREAM_WIDTH}
-                            height={LIVE_STREAM_HEIGHT} />
+                            height={LIVE_STREAM_HEIGHT} />}
                     </div>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={recordClicked} fullWidth >
+                    <Button variant="contained" color="primary" onClick={record} fullWidth >
                         {this.props.camera.recording ? "Recording..." : "Record"}
                     </Button>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={_takePicture} fullWidth >
+                    <Button variant="contained" color="primary" onClick={this.props.image} fullWidth >
                         Picture
                     </Button>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={_startStream} fullWidth >
-                        Update
+                    <Button variant="contained" color="primary" onClick={stream} fullWidth >
+                        {this.props.camera.streaming ? "Streaming..." : "Stream"}
                     </Button>
                 </Grid>
+
                 <Grid item xs={4}>
                     <JSONConfig
                         name={"Video"}
@@ -268,14 +321,30 @@ class CameraInner extends React.Component{
                 <Grid item  xs={4}>
                     <JSONConfig
                         name={"Picture"}
-                        json={this.state.pictureConfig}
-                        onChange={json => this.setState({ pictureConfig: json })} />
+                        json={this.state.imageConfig}
+                        onChange={json => this.setState({ imageConfig: json })} />
                 </Grid>
                 <Grid item xs={4}>
                     <JSONConfig
                         name={"Stream"}
                         json={this.state.streamConfig}
                         onChange={json => this.setState({ streamConfig: json })} />
+                </Grid>
+
+                <Grid item xs={4}>
+                    <Button variant="contained" color="primary" onClick={updateVideo} fullWidth >
+                        Update
+                    </Button>
+                </Grid>
+                <Grid item xs={4}>
+                    <Button variant="contained" color="primary" onClick={updateImage} fullWidth >
+                        Update
+                    </Button>
+                </Grid>
+                <Grid item xs={4}>
+                    <Button variant="contained" color="primary" onClick={updateStream} fullWidth >
+                        Update
+                    </Button>
                 </Grid>
             </Grid>
         );
@@ -286,12 +355,14 @@ export default function Camera(props){
     return (
         <Composer components={[
             <Query query={CAMERA_QUERY} pollInterval={1000}/>,
-            <Mutation mutation={TAKE_VIDEO_MUTATION}/>,
-            <Mutation mutation={TAKE_PICTURE_MUTATION}/>,
-            <Mutation mutation={START_STREAM_MUTATION}/>,
+            <Mutation mutation={CAMERA_START_MUTATION}/>,
+            <Mutation mutation={CAMERA_STOP_MUTATION}/>,
+            <Mutation mutation={CAMERA_IMAGE_MUTATION}/>,
+            <Mutation mutation={CAMERA_SET_VIDEO_CONFIG_MUTATION}/>,
+            <Mutation mutation={CAMERA_SET_STREAM_CONFIG_MUTATION}/>,
+            <Mutation mutation={CAMERA_SET_IMAGE_CONFIG_MUTATION}/>,
         ]}>
-            {([query, takeVideo, takePicture, startStream]) => {
-
+            {([query, start, stop, image, setVideoConfig, setStreamConfig, setImageConfig]) => {
 
                 let { loading, error, data } = query;
                 if (loading) return <p>Loading...</p>;
@@ -300,9 +371,13 @@ export default function Camera(props){
                 return (
                     <CameraInner 
                         camera={data.camera}
-                        takeVideo={takeVideo}
-                        takePicture={takePicture}
-                        startStream={startStream} />
+                        start={start}
+                        stop={stop}
+                        image={image}
+                        setVideoConfig={setVideoConfig}
+                        setStreamConfig={setStreamConfig}
+                        setImageConfig={setImageConfig}
+                    />
                 );
 
             }}
