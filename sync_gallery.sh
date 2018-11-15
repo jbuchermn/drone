@@ -14,8 +14,8 @@ done
 # Sync
 mkdir -p Camera/vid
 mkdir -p Camera/img
-rsync -av /mnt/sdcard/home/pi/Camera/img ./Camera/img
-rsync -av /mnt/sdcard/home/pi/Camera/vid ./Camera/vid
+rsync -av /mnt/sdcard/home/pi/Camera/img ./Camera
+rsync -av /mnt/sdcard/home/pi/Camera/vid ./Camera
 
 # Cleanup
 umount /dev/mmcblk0p1
