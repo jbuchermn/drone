@@ -1,4 +1,5 @@
 import traceback
+import subprocess
 from subprocess import Popen, PIPE
 from threading import Thread
 import os
@@ -13,7 +14,7 @@ import logging
 
 from .schema import schema
 from .gallery import Gallery
-from .camera import Camera, CameraConfig, StreamingMode
+from .camera import Camera
 from .quad import MAVLinkProxy
 from .util import Ping
 
@@ -101,6 +102,9 @@ def run(host='0.0.0.0', port=5000):
 
     shutdown_after_finish = False
 
+    label = subprocess.check_output(["git", "describe"]).strip()
+    print("Label: %s" % label)
+
     with Server() as server:
         app = Flask(__name__,
                     static_folder='../../client',
@@ -110,7 +114,7 @@ def run(host='0.0.0.0', port=5000):
         @app.route('/')
         def index():
             return render_template("index.html",
-                                   rand=random.randint(1, 100000))
+                                   rand=label)
 
         @app.route('/gallery/<path:path>')
         def send_gallery(path):
