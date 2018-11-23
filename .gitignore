@@ -8,3 +8,4 @@ ssl
 **/*.o
 webapp/server/log
 webapp/server/*.json
+Camera/**/*
