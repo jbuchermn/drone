@@ -253,17 +253,21 @@ class CameraInner extends React.Component{
     static getDerivedStateFromProps(props, prevState){
         return { 
             streamConfig: prevState.streamConfig || props.camera.streamConfig,
-            videoConfig: prevState.streamConfig || props.camera.videoConfig,
-            imageConfig: prevState.streamConfig || props.camera.imageConfig
+            videoConfig: prevState.videoConfig || props.camera.videoConfig,
+            imageConfig: prevState.imageConfig || props.camera.imageConfig
         };
     }
 
     render(){
+        const updateVideo = () => this.props.setVideoConfig({ variables: { config: this.state.videoConfig } });
+        const updateImage = () => this.props.setImageConfig({ variables: { config: this.state.imageConfig } });
+        const updateStream = () => this.props.setStreamConfig({ variables: { config: this.state.streamConfig } });
+
         const record = () => {
             if(this.props.camera.recording){
                 this.props.stop();
             }else{
-                this.props.start({ variables: { stream: false, record: true } });
+                updateVideo().then(() => this.props.start({ variables: { stream: false, record: true } }));
             }
         };
 
@@ -271,18 +275,20 @@ class CameraInner extends React.Component{
             if(this.props.camera.streaming){
                 this.props.stop();
             }else{
-                this.props.start({ variables: { stream: true, record: false } });
+                updateStream().then(() => this.props.start({ variables: { stream: true, record: false } }));
             }
         };
 
-        const updateVideo = () => this.props.setVideoConfig({ variables: { config: this.state.videoConfig } });
-        const updateImage = () => this.props.setImageConfig({ variables: { config: this.state.imageConfig } });
-        const updateStream = () => {
-            this.props.setStreamConfig({ variables: { config: this.state.streamConfig } });
+        const image = () => {
             if(this.props.camera.streaming){
-                this.props.start({ variables: { stream: true, record: false } });
+                updateImage()
+                    .then(() => this.props.image())
+                    .then(() => this.props.start({ variables: { stream: true, record: false } }));
+            }else{
+                updateImage().then(() => this.props.image());
             }
-        };
+        }
+
         
 
         return (
@@ -302,7 +308,7 @@ class CameraInner extends React.Component{
                     </Button>
                 </Grid>
                 <Grid item xs={4}>
-                    <Button variant="contained" color="primary" onClick={this.props.image} fullWidth >
+                    <Button variant="contained" color="primary" onClick={image} fullWidth >
                         Picture
                     </Button>
                 </Grid>
