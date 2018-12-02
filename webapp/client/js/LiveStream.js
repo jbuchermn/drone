@@ -1,7 +1,7 @@
 import React from 'react';
 import WSAvc from './wsavc';
 import MJPEGplayer from './MJPEGplayer';
-import { WS_ADDR } from './env';
+import { WS_ADDR, FLIPPED } from './env';
 
 export default class LiveStream extends React.Component{
     constructor(props){
@@ -76,7 +76,7 @@ export default class LiveStream extends React.Component{
 
         let player = new PlayerClass(
             this._canvasRef.current,
-            { x, y, w, h, flipped: true }
+            { x, y, w, h, flipped: FLIPPED }
         );
 
 

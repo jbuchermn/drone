@@ -1,3 +1,5 @@
+export const FLIPPED = false;
+
 export const ADDR = "";
 export const WS_ADDR = "";
 
