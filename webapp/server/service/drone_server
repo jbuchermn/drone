@@ -8,4 +8,4 @@ sleep 20
 # sudo -u pi git pull >> log
 
 echo "Starting server..." >> log
-exec sudo python3 main.py >> log 2>&1
+exec python3 main.py >> log 2>&1

@@ -1,6 +1,5 @@
 import traceback
 import subprocess
-from subprocess import Popen, PIPE
 from threading import Thread
 import os
 import random
@@ -16,23 +15,8 @@ from .schema import schema
 from .gallery import Gallery
 from .camera import Camera
 from .quad import MAVLinkProxy
-from .util import Ping
+from .util import Ping, shutdown, auto_hotspot
 from .gpio import GPIOInterface
-
-
-def shutdown():
-    print("Shutting system down...")
-    command = "/usr/bin/sudo /sbin/shutdown --halt now"
-    process = Popen(command.split(), stdout=PIPE)
-    process.communicate()
-
-
-def auto_hotspot(force=False):
-    print("Calling /usr/bin/autohotspot %s..." % ("force" if force else ""))
-    command = "/usr/bin/sudo /usr/bin/autohotspot %s" % ("force" if force
-                                                         else "")
-    process = Popen(command.split(), stdout=PIPE)
-    process.communicate()
 
 
 class Server:
