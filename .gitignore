@@ -9,3 +9,4 @@ ssl
 webapp/server/log
 webapp/server/*.json
 Camera/**/*
+**/*.fcstd1
