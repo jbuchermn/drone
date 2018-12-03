@@ -6,8 +6,15 @@ mkdir /mnt/sdcard
 mount /dev/mmcblk0p1 /mnt/sdcard
 
 # Convert
+for f in /mnt/sdcard/home/pi/Camera/vid/*.mjpeg; do
+    # ffmpeg -i $f -vf "transpose=1,transpose=1" ${f%.mjpeg}.mp4
+    ffmpeg -i $f ${f%.mjpeg}.mp4
+    mv $f /mnt/sdcard/home/pi/Camera/backup
+done
+
 for f in /mnt/sdcard/home/pi/Camera/vid/*.avi; do
-    ffmpeg -i $f -vf "transpose=1,transpose=1" ${f%.avi}.mp4
+    # ffmpeg -i $f -vf "transpose=1,transpose=1" ${f%.avi}.mp4
+    ffmpeg -i $f ${f%.avi}.mp4
     rm $f
 done
 
