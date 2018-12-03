@@ -17,6 +17,7 @@ from .gallery import Gallery
 from .camera import Camera
 from .quad import MAVLinkProxy
 from .util import Ping
+from .gpio import GPIOInterface
 
 
 def shutdown():
@@ -40,6 +41,7 @@ class Server:
 
         self.cam = Camera(self.gallery, ws_port=8088)
         self.mavlink_proxy = MAVLinkProxy("/dev/ttyS3")
+        self.gpio = GPIOInterface(self)
 
         self.client_ip = None
         self.client_ping = None
@@ -69,6 +71,7 @@ class Server:
         self.gallery.close()
         self.cam.close()
         self.mavlink_proxy.close()
+        self.gpio.close()
         if self.client_ping is not None:
             self.client_ping.close()
 
@@ -102,7 +105,7 @@ def run(host='0.0.0.0', port=5000):
 
     shutdown_after_finish = False
 
-    label = subprocess.check_output(["git", "describe"]).strip()
+    label = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
     print("Label: %s" % label)
 
     with Server() as server:
