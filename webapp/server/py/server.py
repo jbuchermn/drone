@@ -13,7 +13,7 @@ import logging
 
 from .schema import schema
 from .gallery import Gallery
-from .camera import Camera
+from .camera import Camera, StreamingMode
 from .quad import MAVLinkProxy
 from .util import Ping, shutdown, auto_hotspot
 from .gpio import GPIOInterface
@@ -60,6 +60,13 @@ class Server:
             self.client_ping.close()
 
     def auto_hotspot(self, force):
+        if self.cam.get_current_streaming_mode() == StreamingMode.STREAM or \
+                self.cam.get_current_streaming_mode() == StreamingMode.BOTH:
+            self.cam.stop()
+        self.mavlink_proxy.close()
+        if self.client_ping is not None:
+            self.client_ping.close()
+
         auto_hotspot(force)
 
     def request_shutdown(self):

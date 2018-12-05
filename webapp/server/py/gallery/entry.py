@@ -5,7 +5,7 @@ from PIL import Image
 from .converter import ConverterJob
 
 _containers = {
-    'h264': ['mp4', 'ffmpeg -threads 2 -y -i %s -vcodec copy %s'],
+    'h264': ['mp4', 'ffmpeg -y -i %s -vcodec copy %s'],
     'mjpeg': ['avi', 'ffmpeg -y -i %s -vcodec copy %s'],
     # 'mjpeg': ['mp4', 'ffmpeg -threads 2 -y -i %s %s'],
 }
